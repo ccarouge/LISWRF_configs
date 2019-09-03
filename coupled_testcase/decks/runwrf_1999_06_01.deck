@@ -1,0 +1,458 @@
+#!/bin/bash
+
+#
+#create 3 pbs scripts to run a WRF job
+#including getting the boundary data and sending the output data
+# and calling the next job
+#
+# Copy-paste the namelist.input you have used on CCRC machines to run real between
+# the lines "cat >! ./namelist.input << EOF_namelist" and "EOF_namelist"
+
+# Go to WRF run directory
+cd /short/w35/ccc561/WRF/nu-wrf_v6-3.4.1-p1/WRFV3/run
+
+cat > ./getbdy_1999_06.pbs << EOF_getbdy
+#!/bin/csh
+#PBS -m ae
+#PBS -M c.carouge\@unsw.edu.au
+#PBS -P w35
+#PBS -q express
+#PBS -l walltime=00:20:00
+#PBS -l mem=1GB
+#PBS -l ncpus=1
+#PBS -j oe
+#PBS -l wd
+
+module purge
+module load dot
+module load pbs
+module load nco/4.5.0
+
+# Go to WRF run directory
+cd /short/w35/ccc561/WRF/nu-wrf_v6-3.4.1-p1/WRFV3/run
+
+# Get LIS restart file and lis.config
+if (1) then
+
+    rm -f LIS*.*rst
+    ln -sf /g/data1/w35/ccc561/LIS_WRF/coupled_testcase/LIS_output/EXPTES/LIS.ETES.199906010000.d01.CABLErst .
+    set es=\$?
+    [ \$es -ne 0 ] && exit \$es
+
+    rm -f lis.config
+    ln -sf /g/data1/w35/ccc561/LIS_WRF/coupled_testcase/decks/lis.config_TES_wrf_1999_06_01 lis.config
+    set es=\$?
+    [ \$es -ne 0 ] && exit \$es
+
+    # Get MODEL_OUTPUT file that define the output for LIS
+    cd /g/data1/w35/ccc561/LIS_WRF/coupled_testcase/decks
+    cp ./MODEL_OUTPUT_LIST.TBL_d01 /short/w35/ccc561/WRF/nu-wrf_v6-3.4.1-p1/WRFV3/run/.
+    set es=\$?
+    [ \$es -ne 0 ] && exit \$es
+
+    cd /short/w35/ccc561/WRF/nu-wrf_v6-3.4.1-p1/WRFV3/run
+
+    # Get python code for post-processing
+    ln -sf /g/data1/w35/ccc561/LIS_WRF/coupled_testcase/decks/post-process.py .
+    set es=\$?
+    [ \$es -ne 0 ] && exit \$es
+
+endif
+
+rm wrfrst_d0*
+rm wrfbdy*
+rm wrfinput*
+rm wrflowinp*
+
+#get files. See if concatenation is needed or not.
+if (1) then
+  set cm=6
+  set cy=1999
+  set nm=1
+  set i=1
+  cp /g/data1/w35/ccc561/LIS_WRF/coupled_testcase/bdy_data/wrfbdy_d01_1999-06 wrfbdy_d01
+  cp /g/data1/w35/ccc561/LIS_WRF/coupled_testcase/bdy_data/wrflowinp_d01_1999-06 wrflowinp_d01
+
+  while ( \$i < 1 )
+     @ cm = \$cm + 1
+     if ( \$cm > 12 ) then
+       set cm=1
+       @ cy = \$cy + 1
+     endif
+     set date=\`printf %02i \$cm\`
+
+     ncrcat -A wrfbdy_d01 /g/data1/w35/ccc561/LIS_WRF/coupled_testcase/bdy_data/wrfbdy_d01_\$cy-\${date} wrfbdy_d01
+     ncrcat -A wrflowinp_d01 /g/data1/w35/ccc561/LIS_WRF/coupled_testcase/bdy_data/wrflowinp_d01_\$cy-\${date} wrflowinp_d01
+
+     @ i = \$i + 1
+   end
+else
+   ln -sf /g/data1/w35/ccc561/LIS_WRF/coupled_testcase/bdy_data/wrfbdy_d01_1999-06 wrfbdy_d01
+   ln -sf /g/data1/w35/ccc561/LIS_WRF/coupled_testcase/bdy_data/wrflowinp_d01_1999-06 wrflowinp_d01
+endif
+
+if (1) then
+  ln -sf /g/data1/w35/ccc561/LIS_WRF/coupled_testcase/bdy_data/wrfinput_d01_1999-06 wrfinput_d01
+  set es=\$?
+  [ \$es -ne 0 ] && exit \$es
+endif
+if (0) then
+  ln -sf /g/data1/w35/ccc561/LIS_WRF/coupled_testcase/WRF_restart/wrfrst_d??_1999-06* .
+  set es=\$?
+  [ \$es -ne 0 ] && exit \$es
+endif
+
+EOF_getbdy
+
+cat > ./C19990601.pbs << EOF_wrf
+#!/bin/csh
+#PBS -m ae
+#PBS -M c.carouge\@unsw.edu.au
+#PBS -P w35
+#PBS -q express
+#PBS -l walltime=2:30:00
+#PBS -l mem=64GB
+#PBS -l ncpus=64
+#PBS -j oe
+#PBS -l wd
+
+module purge
+module load dot
+module load pbs
+module load openmpi/1.8.8
+module load hdf5/1.8.14
+module load netcdf/4.3.3.1
+module load esmf/3.1.0rp3-intel
+
+# Go to WRF run directory
+cd /short/w35/ccc561/WRF/nu-wrf_v6-3.4.1-p1/WRFV3/run
+
+rm rsl.*
+
+#write the namelist.input
+cat >! ./namelist.input << EOF_namelist
+&time_control
+ run_days                            = 30,
+ run_hours                           = 0,
+ run_minutes                         = 0,
+ run_seconds                         = 0,
+ start_year                          = 1999, 1999, 1999,
+ start_month                         = 06,   06,   06,
+ start_day                           = 01,   01,   01,
+ start_hour                          = 00,   00,   00,
+ start_minute                        = 00,   00,   00,
+ start_second                        = 00,   00,   00,
+ end_year                            = 1999, 1999, 1999,
+ end_month                           = 07,   07,   07,
+ end_day                             = 01,   01,   01,
+ end_hour                            = 00,   00,   12,
+ end_minute                          = 0,  3,  3,
+ end_second                          = 00,   00,   00,
+ interval_seconds                    = 21600
+ input_from_file                     = .true.,.true.,.false.,
+ history_interval                    = 180, 180,   60,
+ frames_per_outfile                  = 1000, 36, 1000,
+ restart                             = .false.
+ restart_interval                    = 1440
+ override_restart_timers             = .true.
+ io_form_history                     = 2
+ io_form_restart                     = 2
+ io_form_input                       = 2
+ io_form_boundary                    = 2
+ debug_level                         = 0
+ auxinput4_inname                    = "wrflowinp_d<domain>"
+ auxinput4_interval                  = 360,360,
+ io_form_auxinput4                   = 2
+ output_diagnostics                  = 1
+ auxhist3_outname                    = "wrfxtrm_d<domain>_<date>"
+ io_form_auxhist3                    = 2
+ auxhist3_interval                   = 1440,1440,1440,
+ frames_per_auxhist3                 = 1,1,1,
+ auxhist7_outname                    = "wrfdly_d<domain>_<date>"
+ auxhist7_interval                   = 1440,1440,1440,
+ io_form_auxhist7                    = 2,
+ frames_per_auxhist7                 = 1,1,1,
+ iofields_filename                   = "my_file_d01.txt"
+ /
+
+&diagnostics
+ max_rain_5m                         = 1,
+ max_wind_5m                         = 1,
+ max_rain_10m                        = 1,
+ max_wind_10m                        = 1,
+ max_rain_20m                        = 1,
+ max_wind_20m                        = 1,
+ max_rain_30m                        = 1,
+ max_wind_30m                        = 1,
+ max_rain_60m                        = 1,
+ max_wind_60m                        = 1,
+ max_window                          = 20,
+ /
+
+&domains
+ time_step                           = 180,
+ time_step_fract_num                 = 0,
+ time_step_fract_den                 = 1,
+ max_dom                             = 1,
+ s_we                                = 1,     1,     1,
+ e_we                                = 224
+ s_sn                                = 1,     1,     1,
+ e_sn                                = 153
+ s_vert                              = 1,     1,     1,
+ e_vert                              = 30,    30,    28,
+ eta_levels = 1.00,0.995,0.99,0.98,0.97,0.96,0.94,0.92,0.89,0.86,0.83,0.80,0.77,0.72,0.67,0.62,0.57,0.52,0.47,0.42,0.37,0.32,0.27,0.22,0.17,0.12,0.07,0.04,0.02,0.00
+ num_metgrid_levels                  = 38
+ num_metgrid_soil_levels             = 4
+ dx                                  = 50000.0
+ dy                                  = 50000.0
+ grid_id                             = 1
+ parent_id                           = 1
+ i_parent_start                      = 1
+ j_parent_start                      = 1
+ parent_grid_ratio                   = 1
+ parent_time_step_ratio              = 1,     5,      3,
+ feedback                            = 0,
+ smooth_option                       = 0
+ /
+
+&lis
+ lis_landcover_type = 2,
+ lis_filename='199906010000.d01.nc'
+/
+
+&physics
+ mp_physics                          = 4,     4,     3,
+ mp_zero_out                         = 2
+ mp_zero_out_thresh                  = 1.e-8
+ ra_lw_physics                       = 1,     1,     1,
+ ra_sw_physics                       = 1,     1,     1,
+ radt                                = 10,    10,    10,
+ cam_abs_freq_s                      = 10800
+ levsiz                              = 59
+ paerlev                             = 29
+ cam_abs_dim1                        = 4
+ cam_abs_dim2                        = 28
+ sf_sfclay_physics                   = 1,     1,     1,
+ sf_surface_physics                  = 5,     5,     1,
+ bl_pbl_physics                      = 1,     1,     1,
+ bldt                                = 0,     0,     0,
+ cu_physics                          = 1,     1,     0,
+ cudt                                = 5,     0,     5,
+ isfflx                              = 1,
+ ifsnow                              = 0,
+ icloud                              = 1,
+ surface_input_source                = 1,
+ num_soil_layers                     = 6,
+ num_land_cat                        = 20,
+ sf_urban_physics                    = 0,
+ sst_update                          = 1,
+ sst_skin                            = 1,
+ tmn_update                          = 1,
+ lagday                              = 150,
+ usemonalb                           = .false.
+ slope_rad                           = 1,
+ maxiens                             = 1,
+ maxens                              = 3,
+ maxens2                             = 3,
+ maxens3                             = 16,
+ ensdim                              = 144,
+ bucket_mm                           = 1000000.,
+ /
+
+ &fdda
+ /
+
+&dynamics
+ rk_ord                              = 3,
+ w_damping                           = 0,
+ diff_opt                            = 1,
+ km_opt                              = 4,
+ diff_6th_opt                        = 0,
+ diff_6th_factor                     = 0.12,
+ base_temp                           = 290.
+ damp_opt                            = 3,
+ zdamp                               = 5000.,  5000.,  5000.,
+ dampcoef                            = 0.05,   0.05,   0.01
+ khdif                               = 0,      0,      0,
+ kvdif                               = 0,      0,      0,
+ non_hydrostatic                     = .true., .true., .true.,
+ moist_adv_opt                       = 1, 1, 1,
+ scalar_adv_opt                      = 1, 1, 1,
+ /
+
+&bdy_control
+ spec_bdy_width                      = 10,
+ spec_zone                           = 1,
+ relax_zone                          = 9,
+ specified                           = .true., .false.,.false.,
+ nested                              = .false., .true., .true.,
+ /
+
+ &grib2
+ /
+
+ &namelist_quilt
+ nio_tasks_per_group = 0,
+ nio_groups = 1,
+ /
+EOF_namelist
+
+rm wrfout_d0*
+
+limit stacksize unlimit
+
+mpirun -mca mpi_paffinity_alone 1 -np \$PBS_NCPUS ./wrf.exe
+
+EOF_wrf
+
+
+cat >./putout_1999_06.pbs << EOF_putout
+#!/bin/csh
+#PBS -m ae
+#PBS -M c.carouge\@unsw.edu.au
+#PBS -P w35
+#PBS -q express
+#PBS -l walltime=05:30:00
+#PBS -l mem=5GB
+#PBS -l ncpus=1
+#PBS -j oe
+#PBS -l wd
+
+module purge
+module load dot
+module load pbs
+module load nco/4.5.3
+module use ~access/modules
+module load nccompress
+
+# Go to WRF run directory
+cd /short/w35/ccc561/WRF/nu-wrf_v6-3.4.1-p1/WRFV3/run
+
+set tempdir = "wrftemp"
+
+# remove previous wrftemp directory if exists
+if (-e \$tempdir) then
+   rm -r \$tempdir
+endif
+
+# create empty wrftemp directory
+mkdir \$tempdir
+mv ./wrf{o,r,d,h,x,2}* \$tempdir/.
+
+# Copy restart file back to run directory
+# Get the name of the last restart file written by the simulation
+set restart=\`ls wrfrst* | tail -1\`
+cp \$tempdir/\$restart .
+
+# Save LIS outputs before processing
+if ( 1 ) then
+    cd output     # In output
+    mv EXPTES EXPTES_postprocess
+
+    cd ../   # In LIS run dir.
+    # Remove last restart file if any
+    rm LIS.ETES*
+
+endif
+
+
+### Start post-processing
+# The idea is to create big files to save on /g/data. If you want it differently please update as you like.
+cd \$tempdir
+
+#wrfdly
+echo Concatenate wrfdly
+set nfiles=\`ls -1 wrfdly* | wc -l\`
+if ( \$nfiles != 0 ) then
+   set listfiles=( \`ls -1 wrfdly*\` )
+   ncrcat -O \$listfiles tmp.nc
+   rm -f \$listfiles
+   mv tmp.nc \${listfiles[1]}
+endif
+
+#wrfxtrm
+echo Concatenate wrfxtrm
+set nfiles=\`ls -1 wrfxtrm* | wc -l\`
+if ( \$nfiles != 0 ) then
+   set listfiles=( \`ls -1 wrfxtrm*\` )
+   ncrcat -O \$listfiles tmp.nc
+   rm -f \$listfiles
+   mv tmp.nc \${listfiles[1]}
+endif
+
+cd ../    # Back to run directory
+
+
+##
+# Compression of files
+echo Compression
+nc_compress -v -o -m 0 \$tempdir/wrfout* \$tempdir/wrfrst*-01_* \$tempdir/wrfhrly*  \$tempdir/wrfdly* \$tempdir/wrfxtrm*
+
+echo Transfer
+#rsync files - if any of them fail then fail out of the pbs job
+rsync -vrlt ./\$tempdir/wrfout_d* /g/data1/w35/ccc561/LIS_WRF/coupled_testcase/WRF_out/.
+set es=\$?
+[ \$es -ne 0 ] && exit \$es
+rsync -vrlt ./\$tempdir/wrfrst_d??_????-??-01* /g/data1/w35/ccc561/LIS_WRF/coupled_testcase/WRF_restart/.
+set es=\$?
+[ \$es -ne 0 ] && exit \$es
+rsync -vrlt ./\$tempdir/wrfxtrm_d??_* /g/data1/w35/ccc561/LIS_WRF/coupled_testcase/WRF_out/.
+rsync -vrlt ./\$tempdir/wrfdly_d??_* /g/data1/w35/ccc561/LIS_WRF/coupled_testcase/WRF_out/.
+
+# Clean up files
+rm -f \$tempdir/*
+
+
+if ( 1 ) then
+    cd output/EXPTES_postprocess
+    echo Post-processing LIS outputs
+
+    # Stats file
+    set dom=1
+    while ( \$dom <= 1 )
+        mv CABLEstats.d0\${dom}.stats CABLEstats.d0\${dom}.stats.199906
+        @ dom++
+    end
+
+    # Call python code for netcdf outputs
+    python /short/w35/ccc561/WRF/nu-wrf_v6-3.4.1-p1/WRFV3/run/post-process.py -s 1999 06 -e 1999 07 CABLE
+    set es=\$?
+    [ \$es -ne 0 ] && exit \$es
+
+    # Compression
+    nc_compress -o -pa -m 0 CABLE.*.nc
+
+    # Copy outputs from LIS
+
+    # Move all restart file to this level.
+    mv CABLE/*/*01/LIS.*010000.d*rst .
+
+    # Remove the directory structure before copy
+    rm -r CABLE
+
+    cd ../
+    rsync -vrlt EXPTES_postprocess/* /g/data1/w35/ccc561/LIS_WRF/coupled_testcase/LIS_output/EXPTES/.
+
+    # Catch error
+    set es=\$?
+    [ \$es -ne 0 ] && exit \$es
+
+    # Clean up
+    cd ../
+    rm -rf ./output/EXPTES_postprocess
+
+endif
+
+# Get next script: We start next script before post-processing to save time.
+ln -sf /g/data1/w35/ccc561/LIS_WRF/coupled_testcase/decks/runwrf_1999_07_01.deck .
+set es=\$?
+[ \$es -ne 0 ] && exit \$es
+
+./runwrf_1999_07_01.deck
+
+
+EOF_putout
+
+getjobid=`qsub getbdy_1999_06.pbs`
+wrfjobid=`qsub -W depend=afterok:$getjobid C19990601.pbs`
+qsub -W depend=afterok:$wrfjobid putout_1999_06.pbs
