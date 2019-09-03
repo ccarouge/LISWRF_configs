@@ -1,0 +1,78 @@
+#------------------------------------------------------------------------------
+# Overall driver options
+#------------------------------------------------------------------------------
+
+LDT running mode:                  "NUWRF preprocessing for real"
+Processed LSM parameter filename:  LIS_offline/lis_input.d01.nc LIS_offline/lis_input.d02.nc LIS_offline/lis_input.d03.nc
+LIS number of nests:    1
+Number of surface model types:        1
+Surface model types:                  LSM        
+Land surface model:                   CABLE.2.3.4   
+Lake model:                           none
+Routing model:                        none
+Water fraction cutoff value:          0.5 0.5 0.5
+Include water points:                 .false.      
+
+Number of met forcing sources:        1
+Met forcing sources:                  PRINCETON
+Blending method for forcings:         overlay
+Met spatial transform methods:        budget-bilinear
+Topographic correction method (met forcing): lapse-rate
+Temporal interpolation method (met forcing): linear
+Temporal downscaling method: "Simple weighting"
+Processed metforcing output interval: 6hr
+Metforcing processing interval:       1day
+Forcing variables list file:          none
+
+LDT diagnostic file:              ldtlog_postlis
+Mask-parameter fill diagnostic file: OUTPUT/MPFilltest.log
+LDT output directory:           OUTPUT
+Undefined value:                    -9999.0
+Number of ensembles per tile:         1
+
+# Must set processor numbers to 1 until LDT parallelization added
+Number of processors along x:         1
+Number of processors along y:         1
+
+
+#------------------------------------------------------------------------------
+# Domain specification
+#------------------------------------------------------------------------------
+
+#Spec. for lambert domain
+Map projection of the LIS domain:    lambert
+Run domain lower left lat:                 -35.912193
+Run domain lower left lon:                 119.96933
+Run domain true lat1:                      -0.6
+Run domain true lat2:                      -38.0
+Run domain standard lon:                   147.63
+Run domain resolution:                      50.0
+Run domain x-dimension size:                99
+Run domain y-dimension size:                59
+
+#Spec. for lat-lon domain
+#Map projection of the LIS domain:    ${PROJECTION_TYPE}
+#Run domain lower left lat:                 -35.912193
+#Run domain lower left lon:                 119.96933
+#Run domain upper right lat:                ${URLAT_AR}
+#Run domain upper right lon:                ${URLON_AR}
+#Run domain resolution (dx):                ${RESX_AR}
+#Run domain resolution (dy):                ${RESY_AR}
+
+#Spec. for mercator domain
+#Map projection of the LIS domain:    ${PROJECTION_TYPE}
+#Run domain lower left lat:                 -35.912193
+#Run domain lower left lon:                 119.96933
+#Run domain true lat1:                      -0.6
+#Run domain standard lon:                   147.63
+#Run domain resolution:                      50.0
+#Run domain x-dimension size:                99
+#Run domain y-dimension size:                59
+
+
+#------------------------------------------------------------------------------
+# NUWRF preprocessing for real options
+#------------------------------------------------------------------------------
+
+LIS history file for land state initialization: LIS.HIST.d01.nc LIS_HIST_CABLE.d02.nc LIS_HIST_CABLE.d03.nc
+Processed NUWRF file for input to real: bdy_data/lis4real_input.d01.nc bdy_data/lis4real_input.d02.nc bdy_data/lis4real_input.d03.nc

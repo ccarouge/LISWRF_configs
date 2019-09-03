@@ -1,0 +1,120 @@
+#!/bin/bash
+#PBS -m ae
+#PBS -M c.carouge\@unsw.edu.au
+#PBS -P w35
+#PBS -l walltime=1:20:00
+#PBS -l mem=10GB
+#PBS -l ncpus=64
+#PBS -j oe
+#PBS -q express
+#PBS -l wd
+#PBS -l other=gdata1a
+
+# Link to inputs
+cd /short/w35/ccc561/WRF/run_nu-wrf_v8/CABLE-CMIP6/LIS_offline
+
+# get input data if first month
+# else
+# get the restart file and monthly input data if not first month
+if [ 0 -eq 1 ]
+then
+    # Get python code for post-processing
+    ln -sf /g/data1/w35/ccc561/LIS_WRF/CABLE-CMIP6/decks/post-process.py .
+    es=$?
+    [ $es -ne 0 ] && exit $es
+
+    # Get MODEL_OUTPUT_LIST.TBL to run directory
+    cp -f /g/data1/w35/ccc561/LIS_WRF/CABLE-CMIP6/decks/./MODEL_OUTPUT_LIST.TBL_d01 /short/w35/ccc561/WRF/run_nu-wrf_v8/CABLE-CMIP6/LIS_offline/.
+    es=$?
+    [ $es -ne 0 ] && exit $es
+else
+    # Get restart file(s)
+    dom=1
+    while [ $dom -le 1 ]
+    do
+  	ln -sf /g/data1/w35/ccc561/LIS_WRF/CABLE-CMIP6/LIS_output/LIS_RST_CABLE_199806010000.d0${dom}.nc .
+	es=$?
+	[ $es -ne 0 ] && exit $es
+	dom=$[$dom+1]
+    done
+fi
+
+# get lis.config file for this month
+ln -sf /g/data1/w35/ccc561/LIS_WRF/CABLE-CMIP6/decks/lis.config_1998_06 .
+
+
+# get next script
+ln -sf /g/data1/w35/ccc561/LIS_WRF/CABLE-CMIP6/decks/run_LIS_1999_06 .
+
+echo "Running LIS now."
+
+# Running the simulation
+# Environment setting
+module purge
+module load openmpi/1.6
+module load netcdf/4.3.3.1
+
+codepath=/short/w35/ccc561/WRF/nuwrf_subtree/installs/cable_cmip6
+if [ -x ${codepath}"/LIS" ]; then
+    export PATH="${codepath}:${PATH}"
+else
+    echo "ERROR: LIS not found"
+    exit 1
+fi
+
+# Go to the run directory
+cd /short/w35/ccc561/WRF/run_nu-wrf_v8/CABLE-CMIP6/LIS_offline/.
+
+# Run LIS
+mpirun -np $PBS_NCPUS LIS -f lis.config_1998_06
+
+echo "LIS run finished. Starting post-processing"
+
+start_post=`date +%s`
+module load nco
+module use /g/data3/hh5/public/modules
+module load conda/analysis27
+
+cd /short/w35/ccc561/WRF/run_nu-wrf_v8/CABLE-CMIP6/LIS_offline/
+cd OUTPUT
+dom=1
+while [ $dom -le 1 ]
+do
+  mv SURFACEMODEL.d0${dom}.stats CABLE.d0${dom}.stats.199806
+  dom=$[$dom + 1]
+done
+
+# Call python code
+python /short/w35/ccc561/WRF/run_nu-wrf_v8/CABLE-CMIP6/LIS_offline/post-process.py -s 1998 06 -e 1999 06 CABLE
+es=$?
+[ $es -ne 0 ] && exit $es
+ 
+
+# Move all restart files to this level.
+mv SURFACEMODEL/LIS_RST* .
+
+# Transfer
+
+
+#get files with rsync - if any of them fail then fail out of the pbs job
+rm -r SURFACEMODEL
+
+cd ../
+cp OUTPUT/* /g/data1/w35/ccc561/LIS_WRF/CABLE-CMIP6/LIS_output/.
+es=$?
+[ $es -ne 0 ] && exit $es
+
+# Remove outputs from rundirectory
+rm OUTPUT/*
+
+# Remove last restart file if any
+rm /short/w35/ccc561/WRF/run_nu-wrf_v8/CABLE-CMIP6/LIS_offline/LIS_RST*
+
+end_post=`date +%s`
+echo Time in post-processsing: $((end_post-start_post)) in seconds
+
+# Call next script.
+./run_LIS_1999_06 >& log_1999_06
+
+exit
+

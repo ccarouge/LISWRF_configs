@@ -1,0 +1,293 @@
+# LIS_offline and LIS_PARAMS are links to the proper directories. These links are created
+# automatically by the code. 
+#------------------------------------------------------------------------------
+# Overall driver options
+#------------------------------------------------------------------------------
+
+LDT running mode:                  "LSM parameter processing"
+Processed LSM parameter filename:  LIS_offline/lis_input.d01.nc LIS_offline/lis_input.d02.nc LIS_offline/lis_input.d03.nc
+LIS number of nests:    1
+Number of surface model types:        1
+Surface model types:                  LSM        
+Land surface model:                   CABLE   
+Lake model:                           none
+Routing model:                        none
+Water fraction cutoff value:          0.5 0.5 0.5
+Include water points:                 .true.  .false. .false.  
+
+Number of met forcing sources:        1
+Met forcing sources:                  PRINCETON
+Met spatial transform methods:        budget-bilinear
+Topographic correction method (met forcing): lapse-rate
+Temporal interpolation method (met forcing): linear
+Temporal downscaling method: "Simple weighting"
+Processed metforcing output interval: 6hr
+Metforcing processing interval:       1day
+Forcing variables list file:           LIS_PARAMS/forcing_variables_prince.txt
+
+LDT diagnostic file:              ldtlog_prelis
+Mask-parameter fill diagnostic file: OUTPUT/MPFilltest.log
+LDT output directory:           OUTPUT
+Undefined value:                    -9999.0
+Number of ensembles per tile:         1
+
+# For tiling per veg types (I haven't tested it yet). Other tiling possible (soil texture, soil types...):
+Maximum number of surface type tiles per grid: 1
+Minimum cutoff percentage (surface type tiles): 0.05
+
+# Must set processor numbers to 1 until LDT parallelization added
+Number of processors along x:         1
+Number of processors along y:         1
+
+# To choose the format of the output. Important when using the tiling
+Output methodology: "2d gridspace"
+Output data format: netcdf
+Output naming style: "3 level hierarchy"
+
+#------------------------------------------------------------------------------
+# Domain specification
+#------------------------------------------------------------------------------
+
+#Spec. for lambert domain
+Map projection of the LIS domain:    lambert
+Run domain lower left lat:                 -35.912193
+Run domain lower left lon:                 119.96933
+Run domain true lat1:                      -0.6
+Run domain true lat2:                      -38.0
+Run domain standard lon:                   147.63
+Run domain resolution:                      50.0
+Run domain x-dimension size:                99
+Run domain y-dimension size:                59
+
+#Spec. for lat-lon domain
+#Map projection of the LIS domain:    ${PROJECTION_TYPE}
+#Run domain lower left lat:                 -35.912193
+#Run domain lower left lon:                 119.96933
+#Run domain upper right lat:                ${URLAT_AR}
+#Run domain upper right lon:                ${URLON_AR}
+#Run domain resolution (dx):                ${RESX_AR}
+#Run domain resolution (dy):                ${RESY_AR}
+
+#Spec. for mercator domain
+#Map projection of the LIS domain:    ${PROJECTION_TYPE}
+#Run domain lower left lat:                 -35.912193
+#Run domain lower left lon:                 119.96933
+#Run domain true lat1:                      -0.6
+#Run domain standard lon:                   147.63
+#Run domain resolution:                      50.0
+#Run domain x-dimension size:                99
+#Run domain y-dimension size:                59
+
+
+#------------------------------------------------------------------------------
+# Parameters
+#------------------------------------------------------------------------------
+
+Landcover data source:     MODIS_LIS MODIS_LIS MODIS_LIS
+Landcover classification:  "MODIS" "MODIS" "MODIS"
+Landcover file:            LIS_PARAMS/UMD/1KM/landcover_IGBP_NCEP.1gd4r LIS_PARAMS/UMD/1KM/landcover_IGBP_NCEP.1gd4r LIS_PARAMS/UMD/1KM/landcover_IGBP_NCEP.1gd4r
+Landcover spatial transform:     tile tile neighbor
+Landcover fill option:           neighbor
+Landcover fill value:            10
+Landcover fill radius:           5
+Landcover map projection:       latlon    latlon    latlon
+Landcover lower left lat:      -59.995  -59.995   -59.995
+Landcover lower left lon:     -179.995 -179.995  -179.995
+Landcover upper right lat:      89.995   89.995    89.995
+Landcover upper right lon:     179.995  179.995   179.995
+Landcover resolution (dx):       0.01     0.01      0.01
+Landcover resolution (dy):       0.01     0.01      0.01
+
+Create or readin landmask:    create create create
+Landmask data source: MODIS_LIS MODIS_LIS MODIS_LIS
+Landmask spatial transform:     mode
+
+#------------------------------------------------------------------------------
+# Crop-Irrigation Parameters
+#------------------------------------------------------------------------------
+
+Incorporate crop information: .false. .false. .false.
+Irrigation type data source: none none none
+Irrigation fraction data source: none none none
+
+#------------------------------------------------------------------------------
+# Soil Parameters
+#------------------------------------------------------------------------------
+
+Soil fraction data source:       FAO FAO FAO
+Soil fraction number of bands: 1
+Soils spatial transform:         neighbor neighbor neighbor
+Soils fill option:               neighbor
+Soils fill radius:   20
+Soils fill value:    0.33
+Soils map projection:       latlon    latlon    latlon
+Soils lower left lat:      -59.750   -59.950   -59.950
+Soils lower left lon:     -179.750  -179.950  -179.950
+Soils upper right lat:      89.750    89.950    89.950
+Soils upper right lon:     179.750   179.950   179.950
+Soils resolution (dx):       0.50      0.10      0.10
+Soils resolution (dy):       0.50      0.10      0.10
+
+Sand fraction map:        LIS_PARAMS/UMD/50KM/sand_FAO.1gd4r LIS_PARAMS/UMD/10KM/sand_FAO.1gd4r LIS_PARAMS/UMD/10KM/sand_FAO.1gd4r
+Clay fraction map:        LIS_PARAMS/UMD/50KM/clay_FAO.1gd4r LIS_PARAMS/UMD/10KM/clay_FAO.1gd4r LIS_PARAMS/UMD/10KM/clay_FAO.1gd4r
+Silt fraction map:        LIS_PARAMS/UMD/50KM/silt_FAO.1gd4r LIS_PARAMS/UMD/10KM/silt_FAO.1gd4r LIS_PARAMS/UMD/10KM/silt_FAO.1gd4r
+
+Soil texture data source: STATSGOFAO_LIS STATSGOFAO_LIS STATSGOFAO_LIS
+Soil texture map:       LIS_PARAMS/UMD/50KM/soiltexture_STATSGO-FAO.1gd4r LIS_PARAMS/UMD/1KM/soiltexture_STATSGO-FAO.1gd4r LIS_PARAMS/UMD/1KM/soiltexture_STATSGO-FAO.1gd4r
+Soil texture spatial transform:   neighbor mode mode
+Soil texture fill option:         neighbor
+Soil texture fill value:          4
+Soil texture fill radius:         5
+Soil texture map projection:     latlon     latlon     latlon
+Soil texture lower left lat:    -59.75   -60.9950   -61.9950
+Soil texture lower left lon:   -179.75  -179.9950  -179.9950
+Soil texture upper right lat:    89.75    89.9950    89.9950
+Soil texture upper right lon:   179.75   179.9950   179.9950
+Soil texture resolution (dx):     0.5      0.01       0.01
+Soil texture resolution (dy):     0.5      0.01       0.01
+
+#------------------------------------------------------------------------------
+# Topography Parameters
+#------------------------------------------------------------------------------
+
+Elevation data source: GTOPO30_LIS GTOPO30_LIS GTOPO30_LIS
+Elevation map:           LIS_PARAMS/UMD/50KM/elev_GTOPO30.1gd4r LIS_PARAMS/UMD/1KM/elev_GTOPO30.1gd4r LIS_PARAMS/UMD/1KM/elev_GTOPO30.1gd4r
+Elevation fill option:            neighbor
+Elevation fill radius:              2
+Elevation fill value:             100.
+Elevation number of bands:        1 1 1
+Topography spatial transform:     neighbor average average
+Topography map projection:       latlon    latlon    latlon
+Topography lower left lat:      -59.75   -59.995   -59.995
+Topography lower left lon:     -179.75  -179.995  -179.995
+Topography upper right lat:      89.75    89.995    89.995
+Topography upper right lon:     179.75   179.995   179.995
+Topography resolution (dx):       0.5      0.01      0.01
+Topography resolution (dy):       0.5      0.01      0.01
+
+#------------------------------------------------------------------------------
+# LSM-Specific Parameters
+#------------------------------------------------------------------------------
+
+Albedo data source: CABLE_LIS CABLE_LIS CABLE_LIS
+Albedo map:                 LIS_PARAMS/UMD/50KM/ccrc_soil_alb_int_short.1gd4r LIS_PARAMS/UMD/1KM/ccrc_soil_alb_int_short.1gd4r LIS_PARAMS/UMD/1KM/ccrc_soil_alb_int_short.1gd4r
+Albedo climatology interval:    monthly monthly monthly  
+Albedo spatial transform:       neighbor average neighbor
+Albedo fill option:             neighbor       
+Albedo fill value:              0.1
+Albedo fill radius:             5
+Albedo map projection:       latlon    latlon    latlon
+Albedo lower left lat:      -59.75   -59.995   -59.995
+Albedo lower left lon:     -179.75  -179.995  -179.995
+Albedo upper right lat:      89.75    89.995    89.995
+Albedo upper right lon:     179.75   179.995   179.995
+Albedo resolution (dx):       0.5      0.01      0.01
+Albedo resolution (dy):       0.5      0.01      0.01
+
+Subgrid Mean Slope data source: CABLE_LIS CABLE_LIS CABLE_LIS
+Subgrid Mean Slope map:                 LIS_PARAMS/UMD/50KM/slope_GSWP3.1gd4r 
+Subgrid Mean Slope climatology interval:    monthly monthly monthly  
+Subgrid Mean Slope spatial transform:       neighbor average neighbor
+Subgrid Mean Slope fill option:             neighbor       
+Subgrid Mean Slope fill value:              0.1
+Subgrid Mean Slope fill radius:             5
+Subgrid Mean Slope map projection:       latlon    latlon    latlon
+Subgrid Mean Slope lower left lat:      -59.75   -59.95   -59.95
+Subgrid Mean Slope lower left lon:     -179.75  -179.95  -179.95
+Subgrid Mean Slope upper right lat:      89.75    89.95    89.95
+Subgrid Mean Slope upper right lon:     179.75   179.95   179.95
+Subgrid Mean Slope resolution (dx):       0.5      0.1      0.1
+Subgrid Mean Slope resolution (dy):       0.5      0.1      0.1
+
+Subgrid Stddev Slope data source: CABLE_LIS CABLE_LIS CABLE_LIS
+Subgrid Stddev Slope map:                 LIS_PARAMS/UMD/50KM/slope_std_GSWP3.1gd4r
+Subgrid Stddev Slope climatology interval:    monthly monthly monthly
+Subgrid Stddev Slope spatial transform:       neighbor average neighbor
+Subgrid Stddev Slope fill option:             neighbor
+Subgrid Stddev Slope fill value:              0.1
+Subgrid Stddev Slope fill radius:             5
+Subgrid Stddev Slope map projection:       latlon    latlon    latlon
+Subgrid Stddev Slope lower left lat:      -59.75   -59.95   -59.95
+Subgrid Stddev Slope lower left lon:     -179.75  -179.95  -179.95
+Subgrid Stddev Slope upper right lat:      89.75    89.95    89.95
+Subgrid Stddev Slope upper right lon:     179.75   179.95   179.95
+Subgrid Stddev Slope resolution (dx):       0.5      0.1      0.1
+Subgrid Stddev Slope resolution (dy):       0.5      0.1      0.1
+
+Max snow albedo data source: NCEP_LIS NCEP_LIS NCEP_LIS
+Max snow albedo map:        LIS_PARAMS/UMD/50KM/mxsnoalb_NCEP.1gd4r LIS_PARAMS/UMD/1KM/mxsnoalb_NCEP.1gd4r  LIS_PARAMS/UMD/1KM/mxsnoalb_NCEP.1gd4r 
+Max snow albedo spatial transform:     neighbor average neighbor
+Max snow albedo fill option:           neighbor        
+Max snow albedo fill value:           0.3
+Max snow albedo fill radius:          5
+Max snow albedo map projection:       latlon    latlon    latlon
+Max snow albedo lower left lat:      -59.75   -59.995   -59.995
+Max snow albedo lower left lon:     -179.75  -179.995  -179.995
+Max snow albedo upper right lat:      89.75    89.995    89.995
+Max snow albedo upper right lon:     179.75   179.995   179.995
+Max snow albedo resolution (dx):       0.5      0.01      0.01
+Max snow albedo resolution (dy):       0.5      0.01      0.01
+
+# Vegetation greenness
+Greenness data source: NCEP_LIS NCEP_LIS NCEP_LIS
+Greenness fraction map:        LIS_PARAMS/UMD/50KM/gvf_NCEP LIS_PARAMS/UMD/1KM/gvf_NCEP LIS_PARAMS/UMD/1KM/gvf_NCEP
+Greenness climatology interval:    monthly monthly monthly
+Calculate min-max greenness fraction: .false.
+Greenness maximum map:         LIS_PARAMS/UMD/50KM/gvf_NCEP.MAX.1gd4r LIS_PARAMS/UMD/1KM/gvf_NCEP.MAX.1gd4r LIS_PARAMS/UMD/1KM/gvf_NCEP.MAX.1gd4r
+Greenness minimum map:         LIS_PARAMS/UMD/50KM/gvf_NCEP.MIN.1gd4r LIS_PARAMS/UMD/1KM/gvf_NCEP.MIN.1gd4r LIS_PARAMS/UMD/1KM/gvf_NCEP.MIN.1gd4r
+Greenness spatial transform:       neighbor average neighbor
+Greenness fill option:             neighbor
+Greenness fill radius:             5
+Greenness fill value:              0.20
+Greenness maximum fill value:     1.0
+Greenness minimum fill value:     0.0
+Greenness map projection:       latlon    latlon    latlon
+Greenness lower left lat:      -59.75   -59.995   -59.995
+Greenness lower left lon:     -179.75  -179.995  -179.995
+Greenness upper right lat:      89.75    89.995    89.995
+Greenness upper right lon:     179.75   179.995   179.995
+Greenness resolution (dx):       0.5      0.01      0.01
+Greenness resolution (dy):       0.5      0.01      0.01
+
+
+Bottom temperature data source: NCEP_LIS NCEP_LIS NCEP_LIS
+Bottom temperature map:          LIS_PARAMS/UMD/50KM/tbot_NCEP.1gd4r LIS_PARAMS/UMD/1KM/tbot_NCEP.1gd4r LIS_PARAMS/UMD/1KM/tbot_NCEP.1gd4r
+Bottom temperature spatial transform:    neighbor average neighbor
+Bottom temperature fill option:      average      
+Bottom temperature fill value:       287.0       
+Bottom temperature fill radius:       15.        
+Bottom temperature topographic downscaling:  lapse-rate lapse-rate lapse-rate 
+Bottom temperature map projection:       latlon    latlon    latlon
+Bottom temperature lower left lat:      -59.75   -59.995   -59.995
+Bottom temperature lower left lon:     -179.75  -179.995  -179.995
+Bottom temperature upper right lat:      89.75    89.995    89.995
+Bottom temperature upper right lon:     179.75   179.995   179.995
+Bottom temperature resolution (dx):       0.5      0.01      0.01
+Bottom temperature resolution (dy):       0.5      0.01      0.01
+
+# LAI maps:
+LAI data source:              AVHRR AVHRR AVHRR
+LAI map:                 LIS_PARAMS/UMD/50KM/lai_AVHRR_CLIM LIS_PARAMS/UMD/1KM/lai_AVHRR_CLIM LIS_PARAMS/UMD/1KM/lai_AVHRR_CLIM
+LAI/SAI climatology interval:     monthly monthly monthly
+Calculate min-max LAI:        .true. .true. .true.
+LAI/SAI spatial transform:       neighbor average neighbor
+LAI/SAI fill option:             average
+LAI/SAI fill radius:               5
+LAI fill value:                 0.0001
+LAI maximum fill value:        0.0001
+LAI minimum fill value:        0.0001
+LAI/SAI map projection:       latlon    latlon    latlon
+LAI/SAI lower left lat:      -59.75   -59.995   -59.995
+LAI/SAI lower left lon:     -179.75  -179.995  -179.995
+LAI/SAI upper right lat:      89.75    89.995    89.995
+LAI/SAI upper right lon:     179.75   179.995   179.995
+LAI/SAI resolution (dx):       0.5      0.01      0.01
+LAI/SAI resolution (dy):       0.5      0.01      0.01
+
+#------------------------------------------------------------------------------
+# Forcing Parameters
+#------------------------------------------------------------------------------
+
+PRINCETON elevation map: LIS_PARAMS/UMD/100KM/hydro1k_elev_mean_1d.asc 
+
+
