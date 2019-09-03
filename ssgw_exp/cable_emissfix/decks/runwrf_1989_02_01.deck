@@ -1,0 +1,418 @@
+#!/bin/bash
+
+#
+#create 3 pbs scripts to run a WRF job
+#including getting the boundary data and sending the output data
+# and calling the next job
+#
+# Copy-paste the namelist.input you have used on CCRC machines to run real between
+# the lines "cat >! ./namelist.input << EOF_namelist" and "EOF_namelist"
+
+cat > ./gbdyALB_1989_02.pbs << EOF_getbdy
+#!/bin/csh
+#PBS -m ae
+#PBS -M c.carouge\@unsw.edu.au
+#PBS -P w35
+#PBS -q copyq
+#PBS -l walltime=00:20:00
+#PBS -l mem=80MB
+#PBS -l ncpus=1
+#PBS -j oe
+#PBS -l wd
+
+# Get LIS restart file and lis.config
+if (1) then
+    if (0) then
+        # Get input data
+        mkdir LIS_PARAMS
+        cd LIS_PARAMS
+        rsync -vrlt -e "ssh -c blowfish -i $HOME/.ssh/id_rsa_file_transfer" z3368490\@maelstrom.ccrc.unsw.edu.au:'data15/z3368490/RegridLIS_out/50KM/*.1gd4r' .
+        set es=\$?
+        [ \$es -ne 0 ] && exit \$es
+        cd -
+    endif
+   
+    rm -f LIS*.*rst
+    rsync -vrlt /g/data1/w35/ccc561/LIS_WRF/ssgw_exp/cable_emissfix/LIS_output/EXPI14/LIS.*.19890201*.d0?.* .
+    set es=\$?
+    [ \$es -ne 0 ] && exit \$es
+
+    rm -f lis.config
+    rsync -vrlt -e "ssh -c blowfish -i $HOME/.ssh/id_rsa_file_transfer" /g/data1/w35/ccc561/LIS_WRF/ssgw_exp/cable_emissfix/decks/lis.config_I14_wrf_1989_02_01 lis.config
+    set es=\$?
+    [ \$es -ne 0 ] && exit \$es
+endif
+
+rm wrfrst_d0*
+
+#get files with rsync - if any of them fail then fail out of the pbs job
+rsync -vrlt -e "ssh -c blowfish -i $HOME/.ssh/id_rsa_file_transfer" /g/data1/w35/ccc561/LIS_WRF/ssgw_exp/CABLE_intel14/bdy_data/wrfbdy_d01_1989-02 .
+set es=\$?
+[ \$es -ne 0 ] && exit \$es
+rsync -vrlt -e "ssh -c blowfish -i $HOME/.ssh/id_rsa_file_transfer" /g/data1/w35/ccc561/LIS_WRF/ssgw_exp/CABLE_intel14/bdy_data/wrflowinp_d??_1989-02 .
+set es=\$?
+[ \$es -ne 0 ] && exit \$es
+if (0) then
+  rsync -vrlt -e "ssh -c blowfish -i $HOME/.ssh/id_rsa_file_transfer" /g/data1/w35/ccc561/LIS_WRF/ssgw_exp/CABLE_intel14/bdy_data/wrfinput_d??_1989-02 .
+  set es=\$?
+  [ \$es -ne 0 ] && exit \$es
+endif
+if (1) then
+  rsync -vrlt /g/data1/w35/ccc561/LIS_WRF/ssgw_exp/cable_emissfix/restart/wrfrst_d??_1989-02* .
+  set es=\$?
+  [ \$es -ne 0 ] && exit \$es
+endif
+
+# Note: Loop only works if max_dom < 10.
+mv wrfbdy_d01_1989-02 wrfbdy_d01
+set dom=1
+while ( \$dom <= 1 )
+    mv wrflowinp_d0\${dom}_1989-02 wrflowinp_d0\${dom}
+    mv wrfinput_d0\${dom}_1989-02 wrfinput_d0\${dom}
+    @ dom++
+end
+
+EOF_getbdy
+
+cat > ./ALB19890201.pbs << EOF_wrf
+#!/bin/csh
+#PBS -m ae
+#PBS -M c.carouge\@unsw.edu.au
+#PBS -P w35
+#PBS -q normal
+#PBS -l walltime=3:30:00
+#PBS -l mem=64GB
+#PBS -l ncpus=64
+#PBS -j oe
+#PBS -l wd
+
+module purge
+module load pbs
+module load dot
+module load openmpi/1.8.5
+module load hdf5/1.8.14
+module load netcdf/4.3.3.1
+module load esmf/3.1.0rp3-intel
+
+rm rsl.*
+
+#write the namelist.input
+cat >! ./namelist.input << EOF_namelist
+&time_control
+ run_days                            = 28,
+ run_hours                           = 0,
+ run_minutes                         = 0,
+ run_seconds                         = 0,
+ start_year                          = 1989, 1989, 1989,
+ start_month                         = 02,   02,   02,
+ start_day                           = 01,   01,   01,
+ start_hour                          = 00,   00,   00,
+ start_minute                        = 00,   00,   00,
+ start_second                        = 00,   00,   00,
+ end_year                            = 1989, 1989, 1989,
+ end_month                           = 03,   03,   03,
+ end_day                             = 01,   01,   01,
+ end_hour                            = 00,   00,   12,
+ end_minute                          = 0,  3,  3,
+ end_second                          = 00,   00,   00,
+ interval_seconds                    = 21600
+ input_from_file                     = .true.,.true.,.false.,
+ history_interval                    = 180, 180,   60,
+ frames_per_outfile                  = 1000, 36, 1000,
+ restart                             = .true.
+ restart_interval                    = 40320
+ override_restart_timers             = .true.
+ io_form_history                     = 2
+ io_form_restart                     = 2
+ io_form_input                       = 2
+ io_form_boundary                    = 2
+ debug_level                         = 0
+ auxinput4_inname                    = "wrflowinp_d<domain>"
+ auxinput4_interval                  = 360,360,
+ io_form_auxinput4                   = 2
+ output_diagnostics                  = 1
+ auxhist3_outname                    = "wrfxtrm_d<domain>_<date>"
+ io_form_auxhist3                    = 2
+ auxhist3_interval                   = 1440,1440,1440,
+ frames_per_auxhist3                 = 1,1,1,
+ auxhist4_outname                    = "wrfhrly_d<domain>_<date>"
+ io_form_auxhist4                    = 2
+ auxhist4_interval                   = 60,60,60,
+ frames_per_auxhist4                 = 24,24,24,
+ auxhist7_outname                    = "wrfdly_d<domain>_<date>"
+ auxhist7_interval                   = 1440,1440,1440,
+ io_form_auxhist7                    = 2,
+ frames_per_auxhist7                 = 1,1,1,
+ iofields_filename                   = "my_file_d01.txt"
+ /
+
+&diagnostics
+ max_rain_5m                         = 1,
+ max_wind_5m                         = 1,
+ max_rain_10m                        = 1,
+ max_wind_10m                        = 1,
+ max_rain_20m                        = 1,
+ max_wind_20m                        = 1,
+ max_rain_30m                        = 1,
+ max_wind_30m                        = 1,
+ max_rain_60m                        = 1,
+ max_wind_60m                        = 1,
+ max_window                          = 20,
+ /
+
+&domains
+ time_step                           = 180,
+ time_step_fract_num                 = 0,
+ time_step_fract_den                 = 1,
+ max_dom                             = 1,
+ s_we                                = 1,     1,     1,
+ e_we                                = 224
+ s_sn                                = 1,     1,     1,
+ e_sn                                = 153
+ s_vert                              = 1,     1,     1,
+ e_vert                              = 30,    30,    28,
+ eta_levels = 1.00,0.995,0.99,0.98,0.97,0.96,0.94,0.92,0.89,0.86,0.83,0.80,0.77,0.72,0.67,0.62,0.57,0.52,0.47,0.42,0.37,0.32,0.27,0.22,0.17,0.12,0.07,0.04,0.02,0.00
+ num_metgrid_levels                  = 38
+ num_metgrid_soil_levels             = 4
+ dx                                  = 50000.0
+ dy                                  = 50000.0
+ grid_id                             = 1
+ parent_id                           = 1
+ i_parent_start                      = 1
+ j_parent_start                      = 1
+ parent_grid_ratio                   = 1
+ parent_time_step_ratio              = 1,     5,      3,
+ feedback                            = 0,
+ smooth_option                       = 0
+ /
+
+&lis
+ lis_landcover_type = 2,
+ lis_filename='198902010000.d01.nc'
+/
+
+&physics
+ mp_physics                          = 4,     4,     3,
+ mp_zero_out                         = 2
+ mp_zero_out_thresh                  = 1.e-8
+ ra_lw_physics                       = 1,     1,     1,
+ ra_sw_physics                       = 1,     1,     1,
+ radt                                = 10,    10,    10,
+ cam_abs_freq_s                      = 10800
+ levsiz                              = 59
+ paerlev                             = 29
+ cam_abs_dim1                        = 4
+ cam_abs_dim2                        = 28
+ sf_sfclay_physics                   = 1,     1,     1,
+ sf_surface_physics                  = 5,     5,     1,
+ bl_pbl_physics                      = 1,     1,     1,
+ bldt                                = 0,     0,     0,
+ cu_physics                          = 1,     1,     0,
+ cudt                                = 5,     0,     5,
+ isfflx                              = 1,
+ ifsnow                              = 0,
+ icloud                              = 1,
+ surface_input_source                = 1,
+ num_soil_layers                     = 6,
+ num_land_cat                        = 20,
+ sf_urban_physics                    = 0,
+ sst_update                          = 1,
+ sst_skin                            = 1,
+ tmn_update                          = 1,
+ lagday                              = 150,
+ usemonalb                           = .true.
+ slope_rad                           = 1,
+ maxiens                             = 1,
+ maxens                              = 3,
+ maxens2                             = 3,
+ maxens3                             = 16,
+ ensdim                              = 144,
+ bucket_mm                           = 1000000.,
+ /
+
+ &fdda
+ /
+
+&dynamics
+ rk_ord                              = 3,
+ w_damping                           = 0,
+ diff_opt                            = 1,
+ km_opt                              = 4,
+ diff_6th_opt                        = 0,
+ diff_6th_factor                     = 0.12,
+ base_temp                           = 290.
+ damp_opt                            = 3,
+ zdamp                               = 5000.,  5000.,  5000.,
+ dampcoef                            = 0.05,   0.05,   0.01
+ khdif                               = 0,      0,      0,
+ kvdif                               = 0,      0,      0,
+ non_hydrostatic                     = .true., .true., .true.,
+ moist_adv_opt                       = 1, 1, 1,
+ scalar_adv_opt                      = 1, 1, 1,
+ /
+
+&bdy_control
+ spec_bdy_width                      = 10,
+ spec_zone                           = 1,
+ relax_zone                          = 9,
+ specified                           = .true., .false.,.false.,
+ nested                              = .false., .true., .true.,
+ /
+
+ &grib2
+ /
+
+ &namelist_quilt
+ nio_tasks_per_group = 0,
+ nio_groups = 1,
+ /
+EOF_namelist
+
+rm wrfout_d0*
+
+limit stacksize unlimit
+
+mpirun -mca mpi_paffinity_alone 1 -np \$PBS_NCPUS ./wrf.exe
+
+EOF_wrf
+
+
+cat >./poutALB_1989_02.pbs << EOF_putout
+#!/bin/csh
+#PBS -m ae
+#PBS -M c.carouge\@unsw.edu.au
+#PBS -P w35
+#PBS -q copyq
+#PBS -l walltime=05:30:00
+#PBS -l mem=2000MB
+#PBS -l ncpus=1
+#PBS -j oe
+#PBS -l wd
+
+# Load modules
+module purge
+module load dot pbs
+module load netcdf/4.3.3.1
+module load nco
+
+set tempdir = "wrftemp"
+
+# remove previous wrftemp directory if exists
+if (-e \$tempdir) then
+   rm -r \$tempdir
+endif
+
+# create empty wrftemp directory
+mkdir \$tempdir
+mv ./wrf{o,r,d,h,x,2}* \$tempdir/.
+
+##
+# Compression of files
+foreach file ( \$tempdir/wrf* )
+  mv \$file \$tempdir/wrfout.nc
+  set fac=\$?
+  if ( \$fac != 0 ) then
+    echo "'"\$file"' does not exist!!!!"
+    exit \$fac
+  endif
+  nccopy -d 5 -s \$tempdir/wrfout.nc \$file
+  set nc=\$?
+  if ( \$nc != 0 ) then
+    echo "nccopy does not work!!!!"
+    mv \$tempdir/wrfout.nc \$file
+    exit \$nc
+  endif
+  rm \$tempdir/wrfout.nc
+end # end of files
+
+#scp files - if any of them fail then fail out of the pbs job
+rsync -vrlt ./\$tempdir/wrfout_d* /g/data1/w35/ccc561/LIS_WRF/ssgw_exp/cable_emissfix/out/.
+set es=\$?
+[ \$es -ne 0 ] && exit \$es
+rsync -vrlt ./\$tempdir/wrfrst_d??_1989-03-01* /g/data1/w35/ccc561/LIS_WRF/ssgw_exp/cable_emissfix/restart/.
+set es=\$?
+[ \$es -ne 0 ] && exit \$es
+rsync -vrlt ./\$tempdir/wrfxtrm_d??_* /g/data1/w35/ccc561/LIS_WRF/ssgw_exp/cable_emissfix/out/.
+set es=\$?
+[ \$es -ne 0 ] && exit \$es
+rsync -vrlt ./\$tempdir/wrfdly_d??_* /g/data1/w35/ccc561/LIS_WRF/ssgw_exp/cable_emissfix/out/.
+set es=\$?
+[ \$es -ne 0 ] && exit \$es
+rsync -vrlt ./\$tempdir/wrfhrly_d??_* /g/data1/w35/ccc561/LIS_WRF/ssgw_exp/cable_emissfix/out/.
+set es=\$?
+[ \$es -ne 0 ] && exit \$es
+
+# Clean up files
+rm -f \$tempdir/*
+
+if ( 1 ) then
+    # Post-processing LIS outputs
+    module load nco
+    cd output/EXPI14
+    
+    set dom=1
+    while ( \$dom <= 1 )
+        mv CABLEstats.d0\${dom}.stats CABLEstats.d0\${dom}.stats.198902
+        @ dom++
+    end
+    
+    mkdir tmp
+    mv CABLE/1989/1989*/*.nc tmp/.
+    mv CABLE/1989/1989*/*.nc tmp/.
+    cd tmp
+
+    
+    foreach file (\`ls *.nc\`)
+        ncecat -O -u time \$file \$file
+        set ftime=\`echo \$file | cut -d"." -f1\`
+        echo \$ftime
+        ncap2 -O -s 'time[\$time]='\$ftime'.' \$file \$file
+    end
+    
+    ncrcat *.d01.nc CABLE.19890201.d01.nc
+    
+    #Compression
+    nccopy -d 5 -s CABLE.19890201.d01.nc tmp.nc
+    mv tmp.nc ../CABLE.19890201.d01.nc
+
+
+    # Copy outputs from LIS
+    cd ../
+    rm -r tmp
+
+    # Move all restart file to this level.
+    mv CABLE/*/*/LIS.* .
+    
+    # Remove the directory structure before copy
+    rm -r CABLE
+
+    cd ../
+    rsync -vrlpt EXPI14 /g/data1/w35/ccc561/LIS_WRF/ssgw_exp/cable_emissfix/LIS_output/.
+
+    # Catch error
+    set es=\$?
+    [ \$es -ne 0 ] && exit \$es
+    
+    # Clean up
+    rm -rf ./output/EXPI14/*
+
+    # Remove last restart file if any
+    cd ../
+    rm LIS.EI14*
+
+endif
+
+
+# Get next script
+rsync -vrlt -e "ssh -c blowfish -i $HOME/.ssh/id_rsa_file_transfer" /g/data1/w35/ccc561/LIS_WRF/ssgw_exp/cable_emissfix/decks/runwrf_1989_03_01.deck .
+set es=\$?
+[ \$es -ne 0 ] && exit \$es
+
+./runwrf_1989_03_01.deck
+
+EOF_putout
+
+getjobid=`qsub gbdyALB_1989_02.pbs`
+wrfjobid=`qsub -W depend=afterok:$getjobid ALB19890201.pbs`
+qsub -W depend=afterok:$wrfjobid poutALB_1989_02.pbs
+

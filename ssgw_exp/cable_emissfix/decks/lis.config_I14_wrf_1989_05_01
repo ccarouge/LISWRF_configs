@@ -1,0 +1,283 @@
+#Overall driver options: only one value, independent of nests
+Domain type:                       3  # 1-latlon
+Running mode:                      8  # 1-retrospective; 8-NUWRF
+#Domain type:                       3  # 1-latlon
+Number of nests:                   1  # 1-one nest
+Land surface model:               17  # 1-Noah2.7.1; 17-CABLE
+Base forcing source:               9  # 1-GDAS; 2-GEOS; 9-Princeton
+Number of base forcing variables:  10
+Use elevation correction (base forcing):              1  # 1-use lapse rate
+Spatial interpolation method (base forcing):          1  # 1-bilinear
+Temporal interpolation method (base forcing):         1  # 1-linear
+Number of supplemental forcing sources:               0
+Supplemental forcing sources:                        26
+Number of supplemental forcing variables:             8
+Use elevation correction (supplemental forcing):      0
+Spatial interpolation method (supplemental forcing):  1
+Temporal interpolation method (supplemental forcing): 1
+
+# One filename per nest
+Model output attributes file:        './MODEL_OUTPUT_LIST.TBL_d01'
+
+#The following options list the choice of parameter maps to be used 
+# only one value
+Map projection of parameter data:  0
+# one value per nest
+Landcover data source:             6  # 1-UMD; 2-USGS; 6-IGBP (modified)
+Use soil texture:                  0  # 0-do not use
+Soil data source:                  1  # 1-FAO; 2-STATSGO
+Soil color data source:            0  # 1-FAO; 2-STATSGO
+Elevation data source:             1  # 1-GTOPO30 elevation
+Slope data source:                 0  # 0-do not use
+Aspect data source:                0  # 0-do not use
+Curvature data source:             0  # 0-do not use
+LAI data source:                   6  # 0-do not use; 1-AVHRR-based LAI
+SAI data source:                   0  # 0-do not use
+Albedo data source:                4  # 0-do not use
+Greenness data source:             0  # 0-do not use
+Porosity data source:              0  # 0-do not use
+Ksat data source:                  0  # 0-do not use
+B parameter data source:           0  # 0-do not use
+Quartz data source:                0  # 0-do not use
+
+#Runtime options: all options have only 1 value (independent of nest).
+Experiment code:                'I14'
+Number of veg types:              20  # 13-UMD; 24-USGS; 20-IGBP (modified)
+Forcing variables list file:       ./LS_PARAMS_RAIJ/forcing_variables_wrf_v341.txt
+Output forcing:                    1  # 1-yes
+Output parameters:                 1  # 0-no
+Output methodology:                2  # 2-gridded
+Output data format:                3  # 1-binary, 3-netCDF
+Output naming style:               1
+Output GRIB Table Version:       130
+Output GRIB Center Id:             7
+Output GRIB Subcenter Id:        138
+Output GRIB Process Id:            1
+Output GRIB Grid Id:             255
+Logging level:                     1  # 1-basic
+Start mode:                        1  # 1-restart; 2-coldstart
+Starting year:                   1989
+Starting month:                  05
+Starting day:                    01
+Starting hour:                    00
+Starting minute:                  00
+Starting second:                   0
+Ending year:                     1989
+Ending month:                    06
+Ending day:                      01
+Ending hour:                      00
+Ending minute:                     0  #3
+Ending second:                     0
+Model timestep:                 180.0
+Undefined value:               -9999
+Output directory:              'output'
+Diagnostic output file:        'CABLE.testcase'
+Number of ensembles per tile:      1
+
+#The following options are used for subgrid tiling based on vegetation: only one value (independent of nest)
+Maximum number of tiles per grid:  2
+Cutoff percentage:                 0.05
+
+#Processor Layout: only 1 value, independent of nest
+#Should match the total number of processors used
+Number of processors along x:      8
+Number of processors along y:      8
+Halo size along x:                 0
+Halo size along y:                 0
+
+#---------------------DATA ASSIMILATION ----------------------------------
+#Data Assimilation Options: only one value, except restart file names
+Number of data assimilation instances: 0
+Assimilation algorithm:                0  # 0-none
+Assimilation set:                      0
+Bias estimation algorithm:          none
+Exclude analysis increments:           0
+Use bias restart:                      0
+Bias restart output frequency:     86400
+Number of state variables:             0
+Number of observation types:           0
+Output interval for diagnostics:   21600
+Write ensemble members:                0
+Write observations:                    0
+Write innovations:                     0
+
+#Perturbation options
+Forcing perturbation algorithm:              0  # 0-none
+Observation perturbation algorithm:          0  # 0-none
+State perturbation algorithm:                0  # 0-none
+Forcing perturbation frequency:           3600
+Observation perturbation frequency:       3600
+State perturbation frequency:             3600
+Perturbations start mode:                    2
+Perturbations restart output interval:    3600
+Perturbations restart filename:           none
+Number of forcing fields to be perturbed:    0
+Forcing attributes file:                  none
+Forcing perturbation attributes file:     none
+State attributes file:                    none
+State perturbation attributes file:       none
+Observation attributes file:              none
+Observation perturbation attributes file: none
+Bias estimation attributes file:          none
+Bias restart file:                        none
+
+#------------------------DOMAIN SPECIFICATION--------------------------
+#Definition of Running Domain: Will be replaced by a value by nest
+#Specify the domain extremes in latitude and longitude
+#Spec. for lambert domain
+run domain lower left lat:                 -47.7692
+run domain lower left lon:                 77.0986
+run domain true lat1:                      -0.6
+run domain true lat2:                      -38.0
+run domain standard lon:                   147.63
+run domain resolution:                      50.0
+run domain x-dimension size:                223
+run domain y-dimension size:                152
+
+#Spec. for lat-lon domain
+#run domain lower left lat:                 -47.7692
+#run domain lower left lon:                 77.0986
+#run domain upper right lat:                ${URLAT_AR}
+#run domain upper right lon:                ${URLON_AR}
+#run domain resolution (dx):                ${RESX_AR}
+#run domain resolution (dy):                ${RESY_AR}
+
+#Spec. for mercator domain
+#run domain lower left lat:                 -47.7692
+#run domain lower left lon:                 77.0986
+#run domain true lat1:                      -0.6
+#run domain standard lon:                   147.63
+#run domain resolution:                      50.0
+#run domain x-dimension size:                223
+#run domain y-dimension size:                152
+
+
+#run domain lower left lat:                  25.875
+#run domain lower left lon:                -124.875
+#run domain upper right lat:                 52.875
+#run domain upper right lon:               -67.875
+#run domain resolution (dx):                    0.25
+#run domain resolution (dy):                    0.25
+
+#Definition of Parameter Domain: one value per nest.
+
+param domain lower left lat:                -59.750
+param domain lower left lon:               -179.750
+param domain upper right lat:                89.750
+param domain upper right lon:               179.750
+param domain resolution (dx):                   0.5
+param domain resolution (dy):                   0.5
+
+#--------------------------------PARAMETERS----------------------------------
+#Metadata for Parameter maps: one value per nest
+#Landcover and Landmask
+landmask file:                        ./LS_PARAMS_RAIJ/UMD/50KM/landmask_UMD.1gd4r
+landcover file:                       ./LS_PARAMS_RAIJ/UMD/50KM/landcover_IGBP_NCEP_nosavanna.1gd4r
+#landcover file:                       ./LS_PARAMS_RAIJ/UMD/50KM/landcover_IGBP_NCEP.1gd4r
+landcover file format:                1
+landcover lower left lat:                -59.750
+landcover lower left lon:               -179.75
+landcover upper right lat:                89.75
+landcover upper right lon:               179.75
+landcover resolution (dx):                 0.5
+landcover resolution (dy):                 0.5
+
+#Topography maps: one value per nest
+elevation map:                        ./LS_PARAMS_RAIJ/UMD/50KM/elev_GTOPO30.1gd4r
+slope map:
+aspect map:
+curvature map:
+topography lower left lat:               -59.75
+topography lower left lon:              -179.75
+topography upper right lat:               89.75
+topography upper right lon:              179.75
+topography resolution (dx):                0.5
+topography resolution (dy):                0.5
+
+#Soils maps: one value per nest
+sand fraction map:         ./LS_PARAMS_RAIJ/UMD/50KM/sand_FAO.1gd4r
+clay fraction map:         ./LS_PARAMS_RAIJ/UMD/50KM/clay_FAO.1gd4r
+silt fraction map:         ./LS_PARAMS_RAIJ/UMD/50KM/silt_FAO.1gd4r
+soil color map:            ./LS_PARAMS_RAIJ/UMD/50KM/soilcolor_FAO.1gd4r    
+porosity map:
+saturated matric potential map:       # psisat
+saturated hydraulic conductivity map: # ksat
+b parameter map:
+quartz map:
+soils lower left lat:                    -59.75
+soils lower left lon:                   -179.75
+soils upper right lat:                    89.75
+soils upper right lon:                   179.75
+soils resolution (dx):                     0.5
+soils resolution (dy):                     0.5
+
+#Albedo maps: one value per nest
+albedo map:                           ./LS_PARAMS_RAIJ/UMD/50KM/ccrc_soil_alb_int_short
+albedo climatology interval:          1  # in months
+max snow free albedo map:             ./LS_PARAMS_RAIJ/UMD/50KM/mxsnoalb_NCEP.1gd4r
+bottom temperature map:               ./LS_PARAMS_RAIJ/UMD/50KM/tbot_NCEP.1gd4r
+
+# EMK...Bottom soil temperature adjustment options
+TBOT data source: 1 1 1
+TBOT terrain adjustment option: 0
+TBOT lag skin temperature update option: 0
+TBOT skin temperature lag days: 140
+
+
+#Greenness fraction maps: one value per nest
+greenness fraction map:               ./LS_PARAMS_RAIJ/UMD/50KM/gvf_NCEP
+greenness climatology interval:       1  # in months
+
+#LAI maps: one value per nest
+LAI map:             ./LS_PARAMS_RAIJ/UMD/50KM/lai_MODIS_CCRC.CLIM                
+SAI map:             ./LS_PARAMS_RAIJ/UMD/50KM/sai_AVHRR_CLIM                
+
+#--------------------------------FORCINGS----------------------------------
+#PRINCETON (forcing option =9)
+PRINCETON forcing directory:      ./LS_PARAMS_RAIJ/FORCING/PRINCE
+PRINCETON elevation map:          ./LS_PARAMS_RAIJ/UMD/50KM/elev_hydro1k_mean_1d.1gd4r
+PRINCETON domain x-dimension size:      360
+PRINCETON domain y-dimension size:      180
+PRINCETON number of forcing variables:  7
+
+
+#-----------------------LAND SURFACE MODELS--------------------------
+#CABLE LSM (lsm option=15): one value per nest
+CABLE model output interval:              10800
+CABLE restart output interval:            2678400
+CABLE restart file:                       LIS.EI14.198905010000.d01.CABLErst
+CABLE vegetation parameter table:         ./LS_PARAMS_RAIJ/cable_parms/def_veg_params_igbp.txt
+CABLE SOILFLAG:                           ssgw  # soilsnow, ssgw
+CABLE soil types:                         2 # 1: Zobler, 2: STATSGO
+CABLE soil parameter table:               ./LS_PARAMS_RAIJ/cable_parms/def_soil_params.txt
+CABLE hydraulic redistribution:           .FALSE.     # .TRUE., .FALSE.
+CABLE wilting parameter:                  0.5         # 
+CABLE saturation parameter:               0.8         #
+CABLE FWSOIL_SWITCH:                      standard    # standard
+                                                      # non-linear extrapolation
+                                                      # Lai and Ktaul 2000
+CABLE DIAG_SOIL_RESP:                     ON          # ON, OFF
+CABLE LEAF_RESPIRATION:                   ON          # ON, OFF
+CABLE CONSISTENCY_CHECK:                  .FALSE.     # .TRUE., .FALSE.
+CABLE SSNOW_POTEV:                        HDM         # HDM  (Humidity Deficit Method)
+                                                      # P-M  (Penman-Monteith)
+CABLE RUN_DIAG_LEVEL:                     'BASIC'     # 'BASIC', 'NONE'
+CABLE TQ reference height:                40
+CABLE UV reference height:                40
+CABLE fixed snow-free soil albedo:        0.1
+CABLE fixed CO2 concentration:            350.0    # in ppmv
+CABLE check mass balance:                 .TRUE.    # .TRUE., .FALSE.
+CABLE check energy balance:               .FALSE.   # .TRUE., .FALSE.
+CABLE maximum verbosity:                  .false.   # write detail of every grid cell init and params to log?
+CABLE tile to print:                      1160      # tile number to print (0 = print all tiles)
+
+#---------------------------MODEL OUTPUT CONFIGURATION-----------------------
+#Specify the list of ALMA variables that need to be featured in the
+#LSM model output
+Output start year:
+Output start month:
+Output start day:
+Output start hour:
+Output start minutes:
+Output start seconds:
+
