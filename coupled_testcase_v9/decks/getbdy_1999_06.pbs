@@ -1,0 +1,87 @@
+#!/bin/csh
+#PBS -m ae
+#PBS -M c.carouge\@unsw.edu.au
+#PBS -P w35
+#PBS -q express
+#PBS -l walltime=00:20:00
+#PBS -l mem=1GB
+#PBS -l ncpus=1
+#PBS -j oe
+#PBS -l wd
+
+module purge
+module load dot
+module load pbs
+module load nco/4.5.0
+
+# Go to WRF run directory
+cd wrf_rundir
+
+# Get LIS restart file and lis.config
+if (1) then
+
+    rm -f LIS*.*rst
+    ln -sf /g/data1/w35/ccc561/LIS_WRF/coupled_testcase_v9/LIS_offline/OUTPUT/SURFACEMODEL/1999/19990601/LIS_RST._CABLE_199906010000.d01.nc .
+    set es=$?
+    [ $es -ne 0 ] && exit $es
+
+    rm -f lis.config
+    ln -sf /g/data1/w35/ccc561/LIS_WRF/coupled_testcase_v9/decks/lis.config_v9_TES_wrf_1999_06_01 lis.config
+    set es=$?
+    [ $es -ne 0 ] && exit $es
+
+    # Get MODEL_OUTPUT file that define the output for LIS
+    cp /g/data1/w35/ccc561/LIS_WRF/coupled_testcase_v9/decks/CABLE_OUTPUT_LIST.TBL_d01 .
+    set es=$?
+    [ $es -ne 0 ] && exit $es
+
+    # Get python code for post-processing
+    ln -sf /g/data1/w35/ccc561/LIS_WRF/coupled_testcase_v9/decks/post-process.py .
+    set es=$?
+    [ $es -ne 0 ] && exit $es
+
+endif
+
+rm wrfrst_d0*
+rm wrfbdy*
+rm wrfinput*
+rm wrflowinp*
+
+#get files. See if concatenation is needed or not.
+if (0) then
+  set cm=6
+  set cy=1999
+  set nm=1
+  set i=1
+  cp /g/data1/w35/ccc561/LIS_WRF/coupled_testcase_v9/bdy_data/wrfbdy_d01_1999-06 wrfbdy_d01
+  cp /g/data1/w35/ccc561/LIS_WRF/coupled_testcase_v9/bdy_data/wrflowinp_d01_1999-06 wrflowinp_d01
+
+  while ( $i < 1 )
+     @ cm = $cm + 1
+     if ( $cm > 12 ) then
+       set cm=1
+       @ cy = $cy + 1
+     endif
+     set date=`printf %02i $cm`
+
+     ncrcat -A wrfbdy_d01 /g/data1/w35/ccc561/LIS_WRF/coupled_testcase_v9/bdy_data/wrfbdy_d01_$cy-${date} wrfbdy_d01
+     ncrcat -A wrflowinp_d01 /g/data1/w35/ccc561/LIS_WRF/coupled_testcase_v9/bdy_data/wrflowinp_d01_$cy-${date} wrflowinp_d01
+
+     @ i = $i + 1
+   end
+else
+   ln -sf /g/data1/w35/ccc561/LIS_WRF/coupled_testcase_v9/bdy_data/wrfbdy_d01_1999-06 wrfbdy_d01
+   ln -sf /g/data1/w35/ccc561/LIS_WRF/coupled_testcase_v9/bdy_data/wrflowinp_d01_1999-06 wrflowinp_d01
+endif
+
+if (1) then
+  ln -sf /g/data1/w35/ccc561/LIS_WRF/coupled_testcase_v9/bdy_data/wrfinput_d01_1999-06 wrfinput_d01
+  set es=$?
+  [ $es -ne 0 ] && exit $es
+endif
+if (0) then
+  ln -sf /g/data1/w35/ccc561/LIS_WRF/coupled_testcase_v9/WRF_restart/wrfrst_d??_1999-06* .
+  set es=$?
+  [ $es -ne 0 ] && exit $es
+endif
+

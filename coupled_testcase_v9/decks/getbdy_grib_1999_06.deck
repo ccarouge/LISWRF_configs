@@ -1,0 +1,319 @@
+#!/bin/bash
+#PBS -q copyq
+#PBS -P w35
+#PBS -l ncpus=1
+#PBS -l mem=3GB
+#PBS -l walltime=2:00:00
+#PBS -j oe
+
+#
+#script to create boundary condition files from Grib files
+#using codes provided in WPS.
+#
+export WRF_ROOT=/short/$PROJECT/$USER/WRF/nuwrf
+if [ -x "${WRF_ROOT}/installs/nuwrf_v9_p0/real.exe" ]; then
+    export PATH="${WRF_ROOT}/installs/nuwrf_v9_p0:${PATH}"
+else
+    echo "ERROR: WRF not found"
+    exit 1
+fi
+
+
+# Module loads
+source $WRF_ROOT/raijin.cfg
+module use /g/data3/hh5/public/modules
+module load conda/analysis3-18.04
+
+
+# Go to deck directory
+cd /g/data1/w35/ccc561/LIS_WRF/coupled_testcase_v9/decks/WPS
+cp ../Makefile .
+
+
+if (( 0 )); then
+   #test to see if the previous wrfbdy file exists - if not then exit
+   if [ ! -e /g/data1/w35/ccc561/LIS_WRF/coupled_testcase_v9/bdy_data/wrfbdy_d01_1999-05 ]; then
+     echo "/g/data1/w35/ccc561/LIS_WRF/coupled_testcase_v9/bdy_data/wrfbdy_d01_1999-05 does not exist"
+     exit
+   fi
+fi
+
+#write the namelist.wps
+cat > ./namelist.wps << EOF_namelist_wps
+&share
+ wrf_core = 'ARW',
+ max_dom = 1,
+ start_date = '1999-06-01_00:00:00', '1999-06-01_00:00:00',
+ end_date   = '1999-07-01_00:00:00', '1999-07-01_00:00:00',
+ interval_seconds = 21600,
+ io_form_geogrid = 2,
+ opt_output_from_geogrid_path = '/g/data1/w35/ccc561/LIS_WRF/coupled_testcase_v9',
+ debug_level = 0,
+/
+
+&geogrid
+ parent_id         = 1
+ parent_grid_ratio = 1
+ i_parent_start    = 1
+ j_parent_start    = 1
+ e_we          = 224
+ e_sn          = 153
+ geog_data_res = 'modis_30s+10m','2m',
+ dx = 50000.0,
+ dy = 50000.0,
+ map_proj =  'lambert',
+ stand_lon = 147.63,
+ pole_lon  = 0.0,
+ pole_lat  = 90.0,
+ ref_lat   = -24.26,
+ ref_lon   = 147.63,
+ truelat1  = -0.6,
+ truelat2  = -38.0,
+ geog_data_path = '/projects/WRF/data/WPS_GEOG',
+/
+
+&ungrib
+ out_format = 'WPS',
+ prefix = 'SFC', 'PL'
+/
+
+&metgrid
+ fg_name = 'SFC', 'PL'
+ io_form_metgrid = 2,
+ opt_metgrid_tbl_path = '/short/w35/ccc561/WRF/nuwrf/WPS/metgrid'
+ opt_output_from_metgrid_path = '/g/data1/w35/ccc561/LIS_WRF/coupled_testcase_v9/bdy_data'
+/
+
+&mod_levs
+ press_pa = 201300 , 200100 , 100000 ,
+             95000 ,  90000 ,
+             85000 ,  80000 ,
+             75000 ,  70000 ,
+             65000 ,  60000 ,
+             55000 ,  50000 ,
+             45000 ,  40000 ,
+             35000 ,  30000 ,
+             25000 ,  20000 ,
+             15000 ,  10000 ,
+              5000 ,   1000
+/
+EOF_namelist_wps
+
+#run link_grib, ungrib and metgrid
+make WPSDIR=$WRF_ROOT/WPS
+
+# Clean up intermediate files
+rm SFC* PL* 
+
+#now run real.exe on these metgrid files
+
+#Clean-up
+rm wrfrst_d0*
+rm wrfbdy_d0?
+rm wrflowinp_d0?
+rm wrfout_d0*
+rm met_em.d0*
+
+# Link met_em files
+ln -s /g/data1/w35/ccc561/LIS_WRF/coupled_testcase_v9/bdy_data/met_em.d0* .
+
+# Link LIS output file
+ln -sf ../LDT_postlis/lis4real_input.d01.nc .
+# Remove rsl files
+rm rsl.*
+
+#write the namelist.input
+cat > ./namelist.input << EOF_namelist
+&time_control
+ run_days                            = 30,
+ run_hours                           = 0,
+ run_minutes                         = 0,
+ run_seconds                         = 0,
+ start_year                          = 1999, 1999, 1999,
+ start_month                         = 06,   06,   06,
+ start_day                           = 01,   01,   01,
+ start_hour                          = 00,   00,   00,
+ start_minute                        = 00,   00,   00,
+ start_second                        = 00,   00,   00,
+ end_year                            = 1999, 1999, 1999,
+ end_month                           = 07,   07,   07,
+ end_day                             = 01,   01,   01,
+ end_hour                            = 00,   00,   12,
+ end_minute                          = 0,  3,  3,
+ end_second                          = 00,   00,   00,
+ interval_seconds                    = 21600
+ input_from_file                     = .true.,.true.,.false.,
+ history_interval                    = 180, 180,   60,
+ frames_per_outfile                  = 1000, 36, 1000,
+ restart                             = .false.
+ restart_interval                    = 1440
+ override_restart_timers             = .true.
+ io_form_history                     = 2
+ io_form_restart                     = 2
+ io_form_input                       = 2
+ io_form_boundary                    = 2
+ debug_level                         = 0
+ auxinput4_inname                    = "wrflowinp_d<domain>"
+ auxinput4_interval                  = 360,360,
+ io_form_auxinput4                   = 2
+ /
+
+
+&domains
+ time_step                           = 180,
+ time_step_fract_num                 = 0,
+ time_step_fract_den                 = 1,
+ max_dom                             = 1,
+ s_we                                = 1,     1,     1,
+ e_we                                = 224
+ s_sn                                = 1,     1,     1,
+ e_sn                                = 153
+ s_vert                              = 1,     1,     1,
+ e_vert                              = 30,    30,    28,
+ eta_levels = 1.00,0.995,0.99,0.98,0.97,0.96,0.94,0.92,0.89,0.86,0.83,0.80,0.77,0.72,0.67,0.62,0.57,0.52,0.47,0.42,0.37,0.32,0.27,0.22,0.17,0.12,0.07,0.04,0.02,0.00
+ num_metgrid_levels                  = 38
+ num_metgrid_soil_levels             = 4
+ dx                                  = 50000.0
+ dy                                  = 50000.0
+ grid_id                             = 1
+ parent_id                           = 1
+ i_parent_start                      = 1
+ j_parent_start                      = 1
+ parent_grid_ratio                   = 1
+ parent_time_step_ratio              = 1,     5,     3,
+ feedback                            = 0,
+ smooth_option                       = 0
+ /
+
+&lis
+ lis_landcover_type = 2,
+ lis_filename='lis4real_input.d01.nc'
+/
+
+ &physics
+ mp_physics                          = 6,     56,     56,
+ gsfcgce_hail                        = 0,
+ gsfcgce_2ice                        = 0,
+ mp_zero_out                         = 2,
+ mp_zero_out_thresh                  = 1.e-12,
+ ra_lw_physics                       = 1,     5,     5,
+ ra_sw_physics                       = 2,     5,     5,
+ radt                                =  10,      9,      9,
+ sf_sfclay_physics                   =  1,      2,      2,
+ sf_surface_physics                  = 2,     55,     55,
+ sf_urban_physics                    = 0,     0,     0,
+ bl_pbl_physics                      = 1,     2,     2,
+ bldt                                = 0,     0,     0,
+ cu_physics                          = 2,     0,     0,
+ cudt                                = 0,     0,     0,
+ isfflx                              = 1,
+ ifsnow                              = 1,
+ icloud                              = 1,
+ surface_input_source                = 1,
+ num_soil_layers                     = 6,
+ maxiens                             = 1,
+ maxens                              = 3,
+ maxens2                             = 3,
+ maxens3                             = 16,
+ ensdim                              = 144,
+ ishallow                            = 1,
+ sst_update                          = 1,
+ sst_skin                            = 1,
+ tmn_update                          = 1,
+ lagday                              = 150,
+ usemonalb                           = .true.
+ cu_rad_feedback = .true.,
+ num_land_cat=20,
+ rdlai2d = .true.,
+ /
+
+ &fdda
+ /
+
+&dynamics
+ rk_ord                              = 3,
+ w_damping                           = 0,
+ diff_opt                            = 1,
+ km_opt                              = 4,
+ diff_6th_opt                        = 0,
+ diff_6th_factor                     = 0.12,
+ base_temp                           = 290.
+ damp_opt                            = 3,
+ zdamp                               = 5000.,  5000.,  5000.,
+ dampcoef                            = 0.05,   0.05,   0.01
+ khdif                               = 0,      0,      0,
+ kvdif                               = 0,      0,      0,
+ non_hydrostatic                     = .true., .true., .true.,
+ moist_adv_opt                       = 1, 1, 1,
+ scalar_adv_opt                      = 1, 1, 1,
+ /
+
+&bdy_control
+ spec_bdy_width                      = 10,
+ spec_zone                           = 1,
+ relax_zone                          = 9,
+ specified                           = .true., .false.,.false.,
+ nested                              = .false., .true., .true.,
+ /
+
+ &grib2
+ /
+
+ &namelist_quilt
+ nio_tasks_per_group = 0,
+ nio_groups = 1,
+ /
+EOF_namelist
+
+
+
+echo Run real
+real.exe
+
+echo Start post-processing
+if (( 0 )); then
+    ncl 'inputdir="./"' 'outdir="/g/data1/w35/ccc561/LIS_WRF/coupled_testcase_v9/bdy_data/"' post-process-WPS.ncl
+else
+    cp wrfbdy_d01 /g/data1/w35/ccc561/LIS_WRF/coupled_testcase_v9/bdy_data/wrfbdy_d01_1999-06
+    # Note: this loop only works for max_dom < 10.
+    ite=1
+    while (( ite <= 1 )); do
+	cp wrflowinp_d0${ite} /g/data1/w35/ccc561/LIS_WRF/coupled_testcase_v9/bdy_data/wrflowinp_d0${ite}_1999-06
+	if !( (( 0 )) && (( 1 )) ); then
+	# If coupled run we only copy the input file for the first month.
+	# The other files are not correct.
+	    cp wrfinput_d0${ite} /g/data1/w35/ccc561/LIS_WRF/coupled_testcase_v9/bdy_data/wrfinput_d0${ite}_1999-06
+	fi
+
+	ite=$[$ite+1]
+    done
+fi
+# Note: this loop only works for max_dom < 10.
+ite=1
+while (( ite <= 1 )); do
+   if !( (( 0 )) && (( 1 )) ); then
+   # If coupled run we only copy the input file for the first month.
+   # The other files are not correct.
+      cp wrfinput_d0${ite} /g/data1/w35/ccc561/LIS_WRF/coupled_testcase_v9/bdy_data/wrfinput_d0${ite}_1999-06
+   fi
+
+   ite=$[$ite+1]
+done
+
+
+echo Clean up
+#rm met_em.d0* /g/data1/w35/ccc561/LIS_WRF/coupled_testcase_v9/bdy_data/met_em.d0*
+
+#Compress files
+nccompress -o -pa -m 0 /g/data1/w35/ccc561/LIS_WRF/coupled_testcase_v9/bdy_data
+
+#Clean-up
+echo Clean up
+if (( 1 )) && (( 0 )); then
+    rm 19990601*.d*.nc
+fi
+
+# Next month
+echo Next script
+#cd /g/data1/w35/ccc561/LIS_WRF/coupled_testcase_v9/decks
+#qsub ./getbdy_grib_1999_07.deck

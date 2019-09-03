@@ -1,0 +1,30 @@
+#!/bin/bash
+#PBS -m ae
+#PBS -M c.carouge\@unsw.edu.au
+#PBS -P w35
+#PBS -l walltime=1:20:00
+#PBS -l mem=10GB
+#PBS -l ncpus=1
+#PBS -j oe
+#PBS -q express
+#PBS -l wd
+
+export NUWRF_DIR=/short/$PROJECT/$USER/WRF/nuwrf
+source $NUWRF_DIR/raijin.cfg
+
+if [ -x "${NUWRF_DIR}/installs/nuwrf/LDT" ]; then
+    export PATH="${NUWRF_DIR}/installs/nuwrf_v9_p0:${PATH}"
+else
+    echo "ERROR: LDT not found"
+fi
+
+subdir=LDT_prelis
+[ ! -d "$subdir" ] && mkdir $subdir
+
+# Run LDT within the LDT_prelis sub-directory, move the config file there
+cd $subdir
+cp ../ldt.config.prelis .
+
+# Run LDT
+LDT ldt.config.prelis
+

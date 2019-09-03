@@ -1,0 +1,47 @@
+#!/bin/bash
+#PBS -m ae
+#PBS -M c.carouge\@unsw.edu.au
+#PBS -P w35
+#PBS -q express
+#PBS -l walltime=00:30:00
+#PBS -l mem=100MB
+#PBS -l ncpus=1
+#PBS -j oe
+#PBS -l wd
+
+cd /home/561/ccc561/WRF/nu-wrf_v6-3.4.1-p1/run_lis/run_test
+
+# get input data if first month
+# else
+# get the restart file and monthly input data if not first month
+if [ 1 -eq 1 ]
+then
+    # Get python code for post-processing
+    ln -sf /g/data1/w35/ccc561/LIS_WRF/coupled_testcase/decks/post-process.py .
+    es=$?
+    [ $es -ne 0 ] && exit $es
+
+    # Get MODEL_OUTPUT_LIST.TBL to run directory
+    cp -f /g/data1/w35/ccc561/LIS_WRF/coupled_testcase/decks/./MODEL_OUTPUT_LIST.TBL_d01 /home/561/ccc561/WRF/nu-wrf_v6-3.4.1-p1/run_lis/run_test/.
+    es=$?
+    [ $es -ne 0 ] && exit $es
+else
+    # Get restart file(s)
+    dom=1
+    while [ $dom -le 1 ]
+    do
+  	ln -sf /g/data1/w35/ccc561/LIS_WRF/coupled_testcase/LIS_output/EXPTES/LIS.ETES.199806010000.d0${dom}.CABLErst .
+	es=$?
+	[ $es -ne 0 ] && exit $es
+	dom=$[$dom+1]
+    done
+fi
+
+# get lis.config file for this month
+ln -sf /g/data1/w35/ccc561/LIS_WRF/coupled_testcase/decks/lis.config_TES_1998_06 .
+
+
+# get next script
+ln -sf /g/data1/w35/ccc561/LIS_WRF/coupled_testcase/decks/run_LIS_1999_06 .
+
+exit

@@ -1,0 +1,144 @@
+#!/bin/csh
+#PBS -m ae
+#PBS -M c.carouge\@unsw.edu.au
+#PBS -P w35
+#PBS -q express
+#PBS -l walltime=05:30:00
+#PBS -l mem=5GB
+#PBS -l ncpus=1
+#PBS -j oe
+#PBS -l wd
+
+module purge
+module load dot
+module load pbs
+module load nco/4.5.3
+module use ~access/modules
+module load nccompress
+
+# Go to WRF run directory
+cd /short/w35/ccc561/WRF/nu-wrf_v6-3.4.1-p1/WRFV3/run
+
+set tempdir = "wrftemp"
+
+# remove previous wrftemp directory if exists
+if (-e $tempdir) then
+   rm -r $tempdir
+endif
+
+# create empty wrftemp directory
+mkdir $tempdir
+mv ./wrf{o,r,d,h,x,2}* $tempdir/.
+
+# Copy restart file back to run directory
+# Get the name of the last restart file written by the simulation
+set restart=`ls wrfrst* | tail -1`
+cp $tempdir/$restart .
+
+# Save LIS outputs before processing
+if ( 1 ) then
+    cd output     # In output
+    mv EXPTES EXPTES_postprocess
+
+    cd ../   # In LIS run dir.
+    # Remove last restart file if any
+    rm LIS.ETES*
+
+endif
+
+
+### Start post-processing
+# The idea is to create big files to save on /g/data. If you want it differently please update as you like.
+cd $tempdir
+
+#wrfdly
+echo Concatenate wrfdly
+set nfiles=`ls -1 wrfdly* | wc -l`
+if ( $nfiles != 0 ) then
+   set listfiles=( `ls -1 wrfdly*` )
+   ncrcat -O $listfiles tmp.nc
+   rm -f $listfiles
+   mv tmp.nc ${listfiles[1]}
+endif
+
+#wrfxtrm
+echo Concatenate wrfxtrm
+set nfiles=`ls -1 wrfxtrm* | wc -l`
+if ( $nfiles != 0 ) then
+   set listfiles=( `ls -1 wrfxtrm*` )
+   ncrcat -O $listfiles tmp.nc
+   rm -f $listfiles
+   mv tmp.nc ${listfiles[1]}
+endif
+
+cd ../    # Back to run directory
+
+
+##
+# Compression of files
+echo Compression
+nc_compress -v -o -m 0 $tempdir/wrfout* $tempdir/wrfrst*-01_* $tempdir/wrfhrly*  $tempdir/wrfdly* $tempdir/wrfxtrm*
+
+echo Transfer
+#rsync files - if any of them fail then fail out of the pbs job
+rsync -vrlt ./$tempdir/wrfout_d* /g/data1/w35/ccc561/LIS_WRF/coupled_testcase/WRF_out/.
+set es=$?
+[ $es -ne 0 ] && exit $es
+rsync -vrlt ./$tempdir/wrfrst_d??_????-??-01* /g/data1/w35/ccc561/LIS_WRF/coupled_testcase/WRF_restart/.
+set es=$?
+[ $es -ne 0 ] && exit $es
+rsync -vrlt ./$tempdir/wrfxtrm_d??_* /g/data1/w35/ccc561/LIS_WRF/coupled_testcase/WRF_out/.
+rsync -vrlt ./$tempdir/wrfdly_d??_* /g/data1/w35/ccc561/LIS_WRF/coupled_testcase/WRF_out/.
+
+# Clean up files
+rm -f $tempdir/*
+
+
+if ( 1 ) then
+    cd output/EXPTES_postprocess
+    echo Post-processing LIS outputs
+
+    # Stats file
+    set dom=1
+    while ( $dom <= 1 )
+        mv CABLEstats.d0${dom}.stats CABLEstats.d0${dom}.stats.199906
+        @ dom++
+    end
+
+    # Call python code for netcdf outputs
+    python /short/w35/ccc561/WRF/nu-wrf_v6-3.4.1-p1/WRFV3/run/post-process.py -s 1999 06 -e 1999 07 CABLE
+    set es=$?
+    [ $es -ne 0 ] && exit $es
+
+    # Compression
+    nc_compress -o -pa -m 0 CABLE.*.nc
+
+    # Copy outputs from LIS
+
+    # Move all restart file to this level.
+    mv CABLE/*/*01/LIS.*010000.d*rst .
+
+    # Remove the directory structure before copy
+    rm -r CABLE
+
+    cd ../
+    rsync -vrlt EXPTES_postprocess/* /g/data1/w35/ccc561/LIS_WRF/coupled_testcase/LIS_output/EXPTES/.
+
+    # Catch error
+    set es=$?
+    [ $es -ne 0 ] && exit $es
+
+    # Clean up
+    cd ../
+    rm -rf ./output/EXPTES_postprocess
+
+endif
+
+# Get next script: We start next script before post-processing to save time.
+ln -sf /g/data1/w35/ccc561/LIS_WRF/coupled_testcase/decks/runwrf_1999_07_01.deck .
+set es=$?
+[ $es -ne 0 ] && exit $es
+
+./runwrf_1999_07_01.deck
+
+
