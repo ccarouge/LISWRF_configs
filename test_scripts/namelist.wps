@@ -1,0 +1,57 @@
+&share
+ wrf_core = 'ARW',
+ max_dom = 1,
+ start_date = '1999-06-01_00:00:00', '1999-06-01_00:00:00',
+ end_date   = '1999-07-01_00:00:00', '1999-07-01_00:00:00',
+ interval_seconds = 21600,
+ io_form_geogrid = 2,
+ opt_output_from_geogrid_path = '/g/data1/w35/ccc561/LIS_WRF/test_scripts',
+ debug_level = 0,
+/
+
+&geogrid
+ parent_id         = 1
+ parent_grid_ratio = 1
+ i_parent_start    = 1
+ j_parent_start    = 1
+ e_we          = 224
+ e_sn          = 153
+ geog_data_res = 'modis_30s+10m','2m',
+ dx = 50000.0,
+ dy = 50000.0,
+ map_proj =  'lambert',
+ stand_lon = 147.63,
+ pole_lon  = 0.0,
+ pole_lat  = 90.0,
+ ref_lat   = -24.26,
+ ref_lon   = 147.63,
+ truelat1  = -0.6,
+ truelat2  = -38.0,
+ geog_data_path = '/projects/WRF/data/WPS_GEOG',
+/
+
+&ungrib
+ out_format = 'WPS',
+ prefix = 'SFC', 'PL'
+/
+
+&metgrid
+ fg_name = 'SFC', 'PL'
+ io_form_metgrid = 2,
+ opt_metgrid_tbl_path = '/short/w35/ccc561/WRF/nuwrf/WPS/metgrid'
+ opt_output_from_metgrid_path = '/g/data1/w35/ccc561/LIS_WRF/test_scripts/bdy_data'
+/
+
+&mod_levs
+ press_pa = 201300 , 200100 , 100000 ,
+             95000 ,  90000 ,
+             85000 ,  80000 ,
+             75000 ,  70000 ,
+             65000 ,  60000 ,
+             55000 ,  50000 ,
+             45000 ,  40000 ,
+             35000 ,  30000 ,
+             25000 ,  20000 ,
+             15000 ,  10000 ,
+              5000 ,   1000
+/

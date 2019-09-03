@@ -1,0 +1,153 @@
+#!/bin/bash
+
+# Get the forcing data
+cat > ./getforc.pbs << EOF_getforc
+#!/bin/bash
+#PBS -m ae
+#PBS -M c.carouge\@unsw.edu.au
+#PBS -P w35
+#PBS -q express
+#PBS -l walltime=00:30:00
+#PBS -l mem=100MB
+#PBS -l ncpus=1
+#PBS -j oe
+#PBS -l wd
+
+cd /short/w35/ccc561/WRF/run_nu-wrf_v8/test_scripts/LIS_offline
+
+# get input data if first month
+# else
+# get the restart file and monthly input data if not first month
+if [ 1 -eq 1 ]
+then
+    # Get python code for post-processing
+    ln -sf /g/data1/w35/ccc561/LIS_WRF/test_scripts/decks/post-process.py .
+    es=\$?
+    [ \$es -ne 0 ] && exit \$es
+
+    # Get MODEL_OUTPUT_LIST.TBL to run directory
+    cp -f /g/data1/w35/ccc561/LIS_WRF/test_scripts/decks/./MODEL_OUTPUT_LIST.TBL_d01 /short/w35/ccc561/WRF/run_nu-wrf_v8/test_scripts/LIS_offline/.
+    es=\$?
+    [ \$es -ne 0 ] && exit \$es
+else
+    # Get restart file(s)
+    dom=1
+    while [ \$dom -le 1 ]
+    do
+  	ln -sf /g/data1/w35/ccc561/LIS_WRF/test_scripts/LIS_output/LIS_RST_CABLE_199806010000.d0\${dom}.nc .
+	es=\$?
+	[ \$es -ne 0 ] && exit \$es
+	dom=\$[\$dom+1]
+    done
+fi
+
+# get lis.config file for this month
+ln -sf /g/data1/w35/ccc561/LIS_WRF/test_scripts/decks/lis.config_1998_06 .
+
+
+# get next script
+ln -sf /g/data1/w35/ccc561/LIS_WRF/test_scripts/decks/run_LIS_1999_06 .
+
+exit
+EOF_getforc
+
+
+# Run LIS
+cat > ./runLIS.pbs <<EOF_run_LIS
+#!/bin/bash
+#PBS -m ae
+#PBS -M c.carouge\@unsw.edu.au
+#PBS -P w35
+#PBS -l walltime=1:20:00
+#PBS -l mem=10GB
+#PBS -l ncpus=64
+#PBS -j oe
+#PBS -q express
+#PBS -l wd
+
+codepath=/short/w35/ccc561/WRF/nuwrf/installs/nuwrf_v9_p0
+if [ -x \${codepath}"/LIS" ]; then
+    export PATH="\${codepath}:\${PATH}"
+else
+    echo "ERROR: LIS not found"
+    exit 1
+fi
+
+module purge
+module load openmpi/1.10.7
+module load netcdf/4.3.3.1
+
+# Go to the run directory
+cd /short/w35/ccc561/WRF/run_nu-wrf_v8/test_scripts/LIS_offline/.
+
+# Run LIS
+mpirun -np \$PBS_NCPUS LIS -f lis.config_1998_06
+
+exit
+EOF_run_LIS
+
+# Put the results at CCRC
+cat > ./putout.pbs << EOF_putout
+#!/bin/csh
+#PBS -m ae
+#PBS -M c.carouge\@unsw.edu.au
+#PBS -P w35
+#PBS -q express
+#PBS -l walltime=01:00:00
+#PBS -l mem=2GB
+#PBS -l ncpus=1
+#PBS -j oe
+#PBS -l wd
+
+module load nco
+module load python
+module use ~access/modules
+module load nccompress
+
+cd /short/w35/ccc561/WRF/run_nu-wrf_v8/test_scripts/LIS_offline/
+cd OUTPUT
+set dom=1
+while ( \$dom <= 1 )
+    mv SURFACEMODEL.d0\${dom}.stats CABLE.d0\${dom}.stats.199806
+    @ dom++
+end
+
+# Call python code
+python /short/w35/ccc561/WRF/run_nu-wrf_v8/test_scripts/LIS_offline/post-process.py -s 1998 06 -e 1999 06 CABLE
+
+# Compression
+#nc_compress -o -pa -m 0 CABLE.*.nc
+
+# Move all restart files to this level.
+mv SURFACEMODEL/LIS_RST* .
+
+# Transfer
+
+
+#get files with rsync - if any of them fail then fail out of the pbs job
+rm -r SURFACEMODEL
+
+cd ../
+cp OUTPUT/* /g/data1/w35/ccc561/LIS_WRF/test_scripts/LIS_output/.
+set es=\$?
+[ \$es -ne 0 ] && exit \$es
+
+# Remove outputs from rundirectory
+rm OUTPUT/*
+
+# Remove last restart file if any
+rm /short/w35/ccc561/WRF/run_nu-wrf_v8/test_scripts/LIS_offline/LIS_RST*
+
+
+# Call next script.
+./run_LIS_1999_06 >& log_1999_06
+
+exit
+EOF_putout
+
+getjobid=`qsub getforc.pbs`
+runjobid=`qsub -W depend=afterok:$getjobid runLIS.pbs`
+qsub -W depend=afterok:$runjobid putout.pbs
+
+
+exit
