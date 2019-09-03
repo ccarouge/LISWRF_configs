@@ -1,0 +1,214 @@
+#------------------------------------------------------------------------------
+# Overall driver options
+#------------------------------------------------------------------------------
+Running mode: 		         "retrospective"
+Number of nests:    1
+Number of surface model types:    1
+Surface model types:            "LSM"
+Surface model output interval:  "24hr" "1hr" "1hr"
+Land surface model:             "CABLE.2.3.4"
+Number of met forcing sources:   1
+Blending method for forcings:    overlay
+Met forcing sources:             PRINCETON
+Topographic correction method (met forcing): "lapse-rate" "lapse-rate" "lapse-rate"
+#Topographic correction method (met forcing): "slope-aspect" "slope-aspect" "slop-aspect"
+# No spatial downscaling for GDAS
+Enable spatial downscaling of precipitation: 0 0 0
+Spatial interpolation method (met forcing):  budget-bilinear budget-bilinear budget-bilinear
+Spatial upscaling method (met forcing): "neighbor"
+Temporal interpolation method (met forcing): linear  linear linear
+
+#------------------------------------------------------------------------------
+# Runtime options
+#------------------------------------------------------------------------------
+Forcing variables list file:               LIS_PARAMS/forcing_variables_prince.txt
+Output methodology:                        "2d gridspace"
+Output model restart files:                1
+Output data format:                        netcdf
+Output naming style:                       "2 level hierarchy"
+Start mode:                                coldstart
+Starting year:                             1999
+Starting month:                            06
+Starting day:                              01
+Starting hour:                             0
+Starting minute:                           0
+Starting second:                           0
+Ending year:                               1999
+Ending month:                              08
+Ending day:                                01
+Ending hour:                               0
+Ending minute:                             0
+Ending second:                             0
+Undefined value:                          -9999
+Output directory:                         OUTPUT
+Diagnostic output file:                   lislog
+Number of ensembles per tile:              1 1 1
+Maximum number of surface type tiles per grid:     1
+Minimum cutoff percentage (surface type tiles):    0.10 
+Maximum number of soil texture tiles per grid:     1
+Minimum cutoff percentage (soil texture tiles):    0.10
+Maximum number of soil fraction tiles per grid:    1
+Minimum cutoff percentage (soil fraction tiles):   0.10
+Maximum number of elevation bands per grid:        1
+Minimum cutoff percentage (elevation bands):       0.10
+Maximum number of slope bands per grid:            1
+Minimum cutoff percentage (slope bands):           0.10
+Maximum number of aspect bands per grid:           1
+Minimum cutoff percentage (aspect bands):          0.10
+Number of processors along x:    8
+Number of processors along y:    8
+Halo size along x: 0 
+Halo size along y: 0 
+Routing model:                   none
+Number of application models: 0
+
+#------------------------------------------------------------------------------
+# Data assimilation
+#------------------------------------------------------------------------------
+Number of data assimilation instances: 0
+Data assimilation algorithm: none
+Data assimilation set: none
+Data assimilation exclude analysis increments: 1
+Data assimilation output interval for diagnostics: 1da
+Data assimilation number of observation types: 0
+Data assimilation output ensemble members: 0
+Data assimilation output processed observations: 0
+Data assimilation output innovations: 0
+Data assimilation use a trained forward model: 0
+Data assimilation trained forward model output file: none
+Bias estimation algorithm: none
+Bias estimation attributes file: none
+Bias estimation restart output frequency: 1da
+Bias estimation start mode: none
+Bias estimation restart file: none
+
+Perturbations start mode:                 coldstart
+Apply perturbation bias correction: 0
+Perturbations restart output interval:    1da
+Perturbations restart filename:           none none none
+Forcing perturbation algorithm:           none
+Forcing perturbation frequency:           1hr
+Forcing attributes file:                  none
+Forcing perturbation attributes file:     none
+State perturbation algorithm:             none
+State perturbation frequency:             3hr
+State attributes file:                    none
+State perturbation attributes file:       none
+Observation perturbation algorithm:       none
+Observation perturbation frequency:       6hr
+Observation attributes file:              none
+Observation perturbation attributes file: none
+IMS data directory: none
+
+#------------------------------------------------------------------------------
+# Radiative Transfer/Forward Models
+#------------------------------------------------------------------------------
+
+Radiative transfer model:  none
+
+#------------------------------------------------------------------------------
+# Parameters
+#------------------------------------------------------------------------------
+
+LIS domain and parameter data file: lis_input.d01.nc lis_input.d02.nc lis_input.d03.nc
+
+Landmask data source:            LDT LDT LDT
+Landcover data source:           LDT LDT LDT
+Soil texture data source:        none none none
+Soil fraction data source:       LDT LDT LDT
+Soil color data source:          none none none
+Elevation data source:           LDT  LDT  LDT
+Slope data source:               none none none
+Aspect data source:              none none none
+Curvature data source:           none none none
+LAI data source:                 LDT LDT LDT
+SAI data source:                 none none none
+Albedo data source:              LDT  LDT  LDT
+Max snow albedo data source:     none none none
+Greenness data source:           none none none
+Roughness data source:           none none none
+Porosity data source:            none none none
+Ksat data source:                none none none
+B parameter data source:         none none none
+Quartz data source:              none none none
+Emissivity data source:          none none none
+Subgrid Mean Slope data source:  LDT  LDT  LDT
+Subgrid Stddev Slope data source:  LDT  LDT  LDT
+TBOT skin temperature update option: 0
+TBOT skin temperature lag days: 0
+
+#------------------------------------------------------------------------------
+# Forcings
+#------------------------------------------------------------------------------
+
+PRINCETON forcing directory:               LIS_PARAMS/FORCING/PRINCE/ ./LIS_PARAMS/FORCING/PRINCE/ ./LIS_PARAMS/FORCING/PRINCE/
+PRINCETON domain x-dimension size:         360 360 360
+PRINCETON domain y-dimension size:         180 180 180
+PRINCETON number of forcing variables:     7 7 7
+
+#------------------------------------------------------------------------------
+# Land surface models
+#------------------------------------------------------------------------------
+
+CABLE model timestep:                     1800ss 30mn 30mn
+CABLE restart output interval:            "24hr" "1mo" "1mo"
+CABLE restart file:                       LIS_RST_CABLE_199906010000.d01.nc
+CABLE vegetation parameter table:         LIS_PARAMS/cable_parms/def_veg_params_igbp_medlyn.txt
+CABLE SOILFLAG:                           ssgw  # soilsnow, ssgw
+CABLE soil types:                         2  # 1: Zobler, 2: STATSGO
+CABLE soil parameter table:               LIS_PARAMS/cable_parms/def_soil_params.txt
+CABLE hydraulic redistribution:           .FALSE.   # .TRUE., .FALSE.
+CABLE wilting parameter:                  0.5      # 
+CABLE saturation parameter:               0.8         #
+CABLE FWSOIL_SWITCH:                      standard    # standard
+                                                      # non-linear extrapolation
+                                                      # Lai and Ktaul 2000
+CABLE DIAG_SOIL_RESP:                     ON          # ON, OFF
+CABLE LEAF_RESPIRATION:                   ON          # ON, OFF
+CABLE CONSISTENCY_CHECK:                  .FALSE.     # .TRUE., .FALSE.
+CABLE SSNOW_POTEV:                        HDM         # HDM  (Humidity Deficit Method)
+                                                      # P-M  (Penman-Monteith)
+CABLE RUN_DIAG_LEVEL:                     'BASIC'     # 'BASIC', 'NONE'
+CABLE TQ reference height:                40 
+CABLE UV reference height:                40 
+CABLE fixed snow-free soil albedo:        0.1 
+CABLE fixed CO2 concentration:            350.0     # in ppmv
+CABLE GS_SWITCH:                          leuning   # leuning, medlyn_fit
+CABLE OR_EVAP:                            .TRUE.    # .TRUE., .FALSE.
+CABLE L_NEW_ROUGHNESS_SOIL:               .FALSE.    # .TRUE., .FALSE.
+CABLE L_NEW_RUNOFF_SPEED:                 .FALSE.    # .TRUE., .FALSE.
+CABLE L_NEW_REDUCE_SOILEVP:               .FALSE.    # .TRUE., .FALSE.
+
+CABLE check mass balance:                 .TRUE.    # .TRUE., .FALSE.
+CABLE check energy balance:               .FALSE.   # .TRUE., .FALSE.
+CABLE maximum verbosity:                  .false.   # write detail of specified grid cell init and params to log?
+CABLE tile to print:                      1758      # tile number to print (0 = print all tiles)
+
+#------------------------------------------------------------------------------
+# Irrigation
+#------------------------------------------------------------------------------
+
+Irrigation scheme: none none none
+
+#------------------------------------------------------------------------------
+# Routing
+#------------------------------------------------------------------------------
+
+#------------------------------------------------------------------------------
+# Model output configuration
+#------------------------------------------------------------------------------
+
+Output start year:     
+Output start month:    
+Output start day:      
+Output start hour:     
+Output start minutes:   
+Output start seconds:  
+Output at specific time only: 0
+Specific output writing time (month):   3
+Specific output writing time (day):    19
+Specific output writing time (hour):   12
+Specific output writing time (minute):  0
+Specific output writing time (second):  0
+Model output attributes file:  './MODEL_OUTPUT_LIST.TBL_d01'
+
